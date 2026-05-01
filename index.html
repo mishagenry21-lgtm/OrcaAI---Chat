@@ -1,1 +1,569 @@
-Привет мир
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OrcaAI Elite</title>
+    <link rel="icon" type="image/png" href="favicon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0b0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="OrcaAI">
+    <link rel="apple-touch-icon" href="favicon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
+    </script>
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --text-color: #ffffff;
+            --panel-bg: #1a1a1a;
+            --icon-bg: #2a2a2a;
+            --accent: #ffffff;
+            --user-msg-bg: #222;
+            --pop-bg: #1a1a1a;
+            --pop-border: #333;
+            --pop-hover: #252525;
+            --input-bg: transparent;
+        }
+
+        body.theme-light {
+            --bg-color: #f1f5f9;
+            --text-color: #1e293b;
+            --panel-bg: #ffffff;
+            --icon-bg: #e2e8f0;
+            --accent: #3b82f6;
+            --user-msg-bg: #e2e8f0;
+            --pop-bg: #ffffff;
+            --pop-border: #cbd5e1;
+            --pop-hover: #f1f5f9;
+            --input-bg: transparent;
+        }
+
+        body.theme-gray {
+            --bg-color: #374151;
+            --text-color: #f3f4f6;
+            --panel-bg: #4b5563;
+            --icon-bg: #6b7280;
+            --accent: #9ca3af;
+            --user-msg-bg: #6b7280;
+            --pop-bg: #4b5563;
+            --pop-border: #6b7280;
+            --pop-hover: #374151;
+            --input-bg: transparent;
+        }
+
+        body.theme-blue {
+            --bg-color: #1e3a5f;
+            --text-color: #e0f0ff;
+            --panel-bg: #1e4d7b;
+            --icon-bg: #2b5f8e;
+            --accent: #60a5fa;
+            --user-msg-bg: #2b5f8e;
+            --pop-bg: #1e4d7b;
+            --pop-border: #2b5f8e;
+            --pop-hover: #1e3a5f;
+            --input-bg: transparent;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .menu-trigger {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            z-index: 110;
+        }
+
+        #chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 160px;
+        }
+
+        .message {
+            max-width: 85%;
+            line-height: 1.5;
+            font-size: 16px;
+        }
+
+        .user-msg {
+            align-self: flex-end;
+            background: var(--user-msg-bg);
+            padding: 12px 16px;
+            border-radius: 18px 18px 4px 18px;
+        }
+
+        .orca-msg {
+            align-self: flex-start;
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: conic-gradient(red, blue, green, red);
+            filter: blur(4px);
+            animation: rot 4s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes rot {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Анимация букв от нас */
+        .letter {
+            opacity: 0;
+            filter: blur(10px);
+            transform: translateY(5px);
+            display: inline-block;
+            animation: letterFadeIn 0.4s forwards;
+        }
+
+        @keyframes letterFadeIn {
+            to {
+                opacity: 1;
+                filter: blur(0);
+                transform: translateY(0);
+            }
+        }
+
+        /* Панель ввода от Gemini */
+        .input-panel {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--panel-bg);
+            border-radius: 24px 24px 0 0;
+            padding: 15px 15px 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+
+        #user-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: none;
+            color: var(--text-color);
+            font-size: 18px;
+            padding: 5px;
+        }
+
+        #user-input::placeholder {
+            color: #666;
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            background: var(--icon-bg);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-mode {
+            border-radius: 21px;
+            padding: 0 12px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--icon-bg);
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .action-btn {
+            height: 42px;
+            border-radius: 21px;
+            border: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .voice-style {
+            background: white;
+            color: black;
+            padding: 0 18px;
+            gap: 8px;
+        }
+
+        .send-style {
+            background: var(--icon-bg);
+            color: var(--text-color);
+            width: 42px;
+        }
+
+        /* Выпадающие меню */
+        .pop-menu {
+            display: none;
+            position: absolute;
+            background: var(--pop-bg);
+            border: 1px solid var(--pop-border);
+            border-radius: 15px;
+            padding: 8px;
+            z-index: 200;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            width: 220px;
+            transition: background 0.3s;
+        }
+
+        .pop-menu.active {
+            display: block;
+        }
+
+        .pop-item {
+            width: 100%;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            text-align: left;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .pop-item:hover {
+            background: var(--pop-hover);
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 105;
+        }
+
+        .icon-svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .theme-row {
+            display: flex;
+            gap: 6px;
+            padding: 5px 10px;
+        }
+
+        .theme-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid var(--pop-border);
+        }
+
+        .theme-dot.black {
+            background: #0b0b0b;
+        }
+        .theme-dot.white {
+            background: #f1f5f9;
+        }
+        .theme-dot.gray {
+            background: #4b5563;
+        }
+        .theme-dot.blue {
+            background: #1e4d7b;
+        }
+    </style>
+</head>
+<body class="theme-dark">
+
+    <div class="overlay" id="overlay" onclick="closeMenus()"></div>
+
+    <header>
+        <div class="logo">🐋 OrcaAI</div>
+        <button class="menu-trigger" onclick="openMenu('settings-menu', event)">⋮</button>
+        <div id="settings-menu" class="pop-menu" style="top: 55px; right: 20px;">
+            <div style="padding: 10px;">
+                <span style="font-size: 10px; opacity: 0.5;">API КЛЮЧ:</span>
+                <input type="password" id="key-in" style="width:100%; background:#000; border:1px solid #444; color:white; margin-top:5px; padding:5px; border-radius: 5px;" onchange="saveKey(this.value)">
+            </div>
+            <div class="theme-row">
+                <div class="theme-dot black" onclick="setTheme('dark')"></div>
+                <div class="theme-dot white" onclick="setTheme('light')"></div>
+                <div class="theme-dot gray" onclick="setTheme('gray')"></div>
+                <div class="theme-dot blue" onclick="setTheme('blue')"></div>
+            </div>
+            <button class="pop-item" onclick="clearChat()" style="color:#ff6b6b;">Очистить чат</button>
+        </div>
+    </header>
+
+    <div id="chat-window"></div>
+
+    <div class="input-panel">
+        <input type="text" id="user-input" placeholder="Спросить OrcaAI" oninput="updateUI()" onkeypress="if(event.key==='Enter') send()">
+
+        <div class="controls-row">
+            <div class="group">
+                <button class="btn-circle">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/></svg>
+                </button>
+
+                <button class="btn-mode" onclick="openMenu('mode-menu', event)">
+                    <svg class="icon-svg" viewBox="0 0 24 24" style="width:16px;"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg>
+                    <span id="mode-label" style="font-size:14px; font-weight:500;">∨</span>
+                </button>
+                <div id="mode-menu" class="pop-menu" style="bottom: 80px; left: 15px;">
+                    <button class="pop-item" onclick="setM('Fast')">⚡ Быстрые ответы</button>
+                    <button class="pop-item" onclick="setM('Deep')">🧠 Думающий (DeepSeek)</button>
+                </div>
+            </div>
+
+            <div class="group">
+                <button class="btn-circle">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg>
+                </button>
+
+                <div id="action-area">
+                    <button class="action-btn voice-style" onclick="startV()">
+                        <svg viewBox="0 0 24 24" style="width:18px; fill:black;"><path d="M10,20H14V4H10V20M4,20H8V12H4V20M16,20H20V12H16V20Z"/></svg>
+                        Голосовой режим
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let key = localStorage.getItem('orca_key') || '';
+        let mode = localStorage.getItem('orca_mode') || 'Fast';
+        let theme = localStorage.getItem('orca_theme') || 'dark';
+        let history = JSON.parse(localStorage.getItem('orca_hist')) || [];
+
+        window.onload = () => {
+            document.body.className = 'theme-' + theme;
+            document.getElementById('key-in').value = key;
+            if (!key) {
+                document.getElementById('chat-window').innerHTML =
+                    '<div style="text-align:center; padding-top:40px;">🔐 Введи API ключ в меню (⋮)</div>';
+            } else {
+                render();
+            }
+        };
+
+        function setTheme(t) {
+            theme = t;
+            document.body.className = 'theme-' + t;
+            localStorage.setItem('orca_theme', t);
+        }
+
+        function openMenu(id, e) {
+            e.stopPropagation();
+            closeMenus();
+            document.getElementById(id).classList.add('active');
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closeMenus() {
+            document.querySelectorAll('.pop-menu').forEach(m => m.classList.remove('active'));
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function setM(m) {
+            mode = m;
+            localStorage.setItem('orca_mode', m);
+            document.getElementById('mode-label').textContent = m === 'Fast' ? '⚡' : '🧠';
+            closeMenus();
+        }
+
+        function saveKey(v) {
+            key = v.trim();
+            localStorage.setItem('orca_key', key);
+            if (key && history.length === 0) {
+                render();
+            }
+        }
+
+        function updateUI() {
+            const input = document.getElementById('user-input').value.trim();
+            const area = document.getElementById('action-area');
+            if (input.length > 0) {
+                area.innerHTML =
+                    `<button class="action-btn send-style" onclick="send()"><svg viewBox="0 0 24 24" style="width:18px; fill:currentColor;"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg></button>`;
+            } else {
+                area.innerHTML = `<button class="action-btn voice-style" onclick="startV()">
+                <svg viewBox="0 0 24 24" style="width:18px; fill:black;"><path d="M10,20H14V4H10V20M4,20H8V12H4V20M16,20H20V12H16V20Z"/></svg>
+                Голосовой режим</button>`;
+            }
+        }
+
+        function render() {
+            const win = document.getElementById('chat-window');
+            win.innerHTML = '';
+            history.forEach(m => {
+                if (m.role === 'user') {
+                    win.innerHTML += `<div class="message user-msg">${m.content}</div>`;
+                } else {
+                    win.innerHTML +=
+                        `<div class="orca-msg"><div class="avatar"></div><div class="message">${marked.parse(m.content)}</div></div>`;
+                }
+            });
+            win.scrollTo(0, win.scrollHeight);
+        }
+
+        function clearChat() {
+            history = [];
+            localStorage.removeItem('orca_hist');
+            render();
+            closeMenus();
+        }
+
+        // Анимация печати с блюром (наша!)
+        function typeEffect(text, element, speed = 18) {
+            element.innerHTML = '';
+            let i = 0;
+
+            function type() {
+                if (i < text.length) {
+                    const span = document.createElement('span');
+                    span.className = 'letter';
+                    span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+                    span.style.animationDelay = (i * 0.015) + 's';
+                    element.appendChild(span);
+                    const win = document.getElementById('chat-window');
+                    win.scrollTo(0, win.scrollHeight);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
+        async function send() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text || !key) return;
+
+            history.push({ role: 'user', content: text });
+            input.value = '';
+            updateUI();
+            render();
+
+            // Создаём блок для ответа с аватаром
+            const win = document.getElementById('chat-window');
+            const orcaDiv = document.createElement('div');
+            orcaDiv.className = 'orca-msg';
+            orcaDiv.innerHTML = '<div class="avatar"></div><div class="message"></div>';
+            win.appendChild(orcaDiv);
+            win.scrollTo(0, win.scrollHeight);
+
+            const msgDiv = orcaDiv.querySelector('.message');
+
+            const model = mode === 'Fast' ? 'google/gemini-2.0-flash-lite-001' : 'deepseek/deepseek-r1';
+            try {
+                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${key}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ "model": model, "messages": history })
+                });
+                const data = await res.json();
+                const aiText = data.choices[0].message.content.replace(
+                    /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}]/gu, '');
+
+                history.push({ role: 'assistant', content: aiText });
+                localStorage.setItem('orca_hist', JSON.stringify(history));
+
+                // Запускаем нашу анимацию печати
+                typeEffect(aiText, msgDiv, 18);
+
+            } catch (e) {
+                msgDiv.textContent = '❌ Ошибка API. Проверь ключ.';
+            }
+        }
+
+        function startV() {
+            const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Rec) return;
+            const rec = new Rec();
+            rec.onresult = (e) => {
+                document.getElementById('user-input').value = e.results[0][0].transcript;
+                updateUI();
+            };
+            rec.start();
+        }
+
+        // Обновляем метку режима при загрузке
+        document.getElementById('mode-label').textContent = mode === 'Fast' ? '⚡' : '🧠';
+    </script>
+</body>
+                                                                           </html>
