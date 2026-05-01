@@ -4,74 +4,234 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>OrcaAI Chat</title>
-  
-  <!-- Иконка -->
   <link rel="icon" type="image/png" href="favicon-192.png">
-  
-  <!-- PWA манифест -->
   <link rel="manifest" href="manifest.json">
-  
-  <!-- Цвет темы -->
   <meta name="theme-color" content="#0f172a">
-  
-  <!-- Для iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="OrcaAI">
   <link rel="apple-touch-icon" href="favicon-192.png">
-  
-  <!-- Ключ из внешнего файла (не в репозитории) -->
-  <script src="config.js"></script>
-  
   <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --header-bg: #0f172a;
+      --text: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --bubble-user: #334155;
+      --bubble-bot: transparent;
+      --input-bg: #1e293b;
+      --input-border: #334155;
+      --accent: #38bdf8;
+      --btn-send-inactive: #334155;
+      --btn-send-active: #e2e8f0;
+      --menu-bg: #1e293b;
+      --shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+    }
+
+    body.theme-light {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --header-bg: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --bubble-user: #e2e8f0;
+      --bubble-bot: transparent;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --accent: #3b82f6;
+      --btn-send-inactive: #cbd5e1;
+      --btn-send-active: #1e293b;
+      --menu-bg: #ffffff;
+      --shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    body.theme-gray {
+      --bg: #374151;
+      --surface: #4b5563;
+      --header-bg: #374151;
+      --text: #f3f4f6;
+      --text-secondary: #d1d5db;
+      --bubble-user: #6b7280;
+      --bubble-bot: transparent;
+      --input-bg: #4b5563;
+      --input-border: #6b7280;
+      --accent: #9ca3af;
+      --btn-send-inactive: #6b7280;
+      --btn-send-active: #f3f4f6;
+      --menu-bg: #4b5563;
+      --shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    body.theme-blue {
+      --bg: #1e3a5f;
+      --surface: #1e4d7b;
+      --header-bg: #1e3a5f;
+      --text: #e0f0ff;
+      --text-secondary: #b0d4ff;
+      --bubble-user: #2b5f8e;
+      --bubble-bot: transparent;
+      --input-bg: #1e4d7b;
+      --input-border: #2b5f8e;
+      --accent: #60a5fa;
+      --btn-send-inactive: #2b5f8e;
+      --btn-send-active: #e0f0ff;
+      --menu-bg: #1e4d7b;
+      --shadow: 0 0 20px rgba(96, 165, 250, 0.3);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
     body {
-      background: #0f172a;
+      background: var(--bg);
       font-family: 'Segoe UI', system-ui, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      transition: background 0.3s;
     }
 
     .chat-container {
       width: 100%;
       max-width: 600px;
       height: 90vh;
-      background: #1e293b;
+      background: var(--surface);
       border-radius: 20px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+      box-shadow: var(--shadow);
+      transition: background 0.3s;
     }
 
     .chat-header {
-      background: #0f172a;
+      background: var(--header-bg);
       padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #334155;
+      border-bottom: 1px solid var(--input-border);
+      transition: background 0.3s;
     }
 
     .logo {
       font-size: 1.4rem;
       font-weight: bold;
-      color: #38bdf8;
+      color: var(--accent);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
     }
 
     #newChatBtn {
-      background: #334155;
+      background: var(--bubble-user);
       border: none;
-      color: white;
+      color: var(--text);
       padding: 6px 14px;
       border-radius: 15px;
       cursor: pointer;
       font-size: 0.9rem;
     }
 
+    .settings-btn {
+      background: var(--bubble-user);
+      border: none;
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Меню тем */
+    .theme-menu {
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      background: var(--menu-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      min-width: 120px;
+    }
+
+    .theme-menu.show {
+      display: flex;
+    }
+
+    .theme-option {
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      text-align: left;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .theme-option:hover {
+      background: var(--bubble-user);
+    }
+
+    /* Меню режимов */
+    .mode-menu {
+      position: absolute;
+      bottom: 70px;
+      left: 20px;
+      background: var(--menu-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+      min-width: 180px;
+    }
+
+    .mode-menu.show {
+      display: flex;
+    }
+
+    .mode-option {
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid var(--input-border);
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .mode-option.active {
+      border-color: var(--accent);
+      background: var(--bubble-user);
+    }
+
+    .mode-option small {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
+
+    /* Сообщения */
     .chat-messages {
       flex: 1;
       padding: 15px;
@@ -79,6 +239,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      position: relative;
     }
 
     .message {
@@ -87,23 +248,25 @@
       border-radius: 18px;
       line-height: 1.5;
       word-wrap: break-word;
+      animation: fadeIn 0.3s ease;
     }
 
     .message.user {
       align-self: flex-end;
-      background: #2563eb;
-      color: white;
+      background: var(--bubble-user);
+      color: var(--text);
       border-bottom-right-radius: 4px;
     }
 
     .message.bot {
       align-self: flex-start;
-      background: #334155;
-      color: #e2e8f0;
+      background: var(--bubble-bot);
+      color: var(--text);
+      padding-left: 5px;
       border-bottom-left-radius: 4px;
     }
 
-    /* Анимация печати с блюром */
+    /* Анимация букв */
     .message.bot span {
       opacity: 0;
       filter: blur(10px);
@@ -113,86 +276,160 @@
     }
 
     @keyframes letterFadeIn {
-      to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translateY(0);
-      }
+      to { opacity: 1; filter: blur(0); transform: translateY(0); }
     }
 
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Три прыгающие точки */
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+      padding: 5px 0;
+    }
+
+    .thinking-dots .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: bounce 0.6s infinite alternate;
+    }
+
+    .thinking-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      to { transform: translateY(-8px); opacity: 0.6; }
+    }
+
+    /* Поле ввода */
     .chat-input {
       display: flex;
       padding: 10px 15px;
-      background: #0f172a;
-      border-top: 1px solid #334155;
+      background: var(--header-bg);
+      border-top: 1px solid var(--input-border);
       gap: 8px;
+      align-items: center;
     }
 
     .chat-input input {
       flex: 1;
       padding: 12px 16px;
       border-radius: 25px;
-      border: none;
-      background: #1e293b;
-      color: white;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text);
       font-size: 1rem;
       outline: none;
+      transition: border 0.2s;
     }
 
     .chat-input input:focus {
-      box-shadow: 0 0 0 2px #38bdf8;
+      border-color: var(--accent);
     }
 
     .chat-input button {
-      width: 46px;
-      height: 46px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       border: none;
-      background: #2563eb;
-      color: white;
-      font-size: 1.3rem;
+      background: var(--btn-send-inactive);
+      color: var(--text);
+      font-size: 1.2rem;
       cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-input button.active {
+      background: var(--btn-send-active);
+      color: var(--bg);
     }
 
     .chat-input button:disabled {
-      background: #475569;
+      opacity: 0.6;
       cursor: not-allowed;
+    }
+
+    .mode-btn {
+      background: var(--bubble-user) !important;
+      color: var(--text) !important;
+      font-size: 1rem !important;
     }
   </style>
 </head>
-<body>
-  <div class="chat-container">
+<body class="theme-dark">
+  <div class="chat-container" id="chatContainer">
     <div class="chat-header">
       <span class="logo">🐋 OrcaAI</span>
-      <button id="newChatBtn">Новый чат</button>
+      <div class="header-actions">
+        <button id="newChatBtn">Новый чат</button>
+        <button class="settings-btn" id="settingsBtn">⋯</button>
+      </div>
     </div>
+
+    <!-- Меню тем -->
+    <div class="theme-menu" id="themeMenu">
+      <button class="theme-option" data-theme="dark">🌙 Чёрная</button>
+      <button class="theme-option" data-theme="light">☀️ Белая</button>
+      <button class="theme-option" data-theme="gray">🔘 Серая</button>
+      <button class="theme-option" data-theme="blue">💧 Синяя</button>
+    </div>
+
     <div class="chat-messages" id="chatMessages"></div>
+
+    <!-- Меню режимов -->
+    <div class="mode-menu" id="modeMenu">
+      <button class="mode-option active" data-mode="fast">
+        Быстрый <small>Быстрые ответы</small>
+      </button>
+      <button class="mode-option" data-mode="thinking">
+        Думающий <small>Решает сложные задачи</small>
+      </button>
+    </div>
+
     <div class="chat-input">
-      <input type="text" id="userInput" placeholder="Спроси что-нибудь..." autocomplete="off">
-      <button id="sendBtn">➤</button>
+      <button class="mode-btn" id="modeBtn">⚡</button>
+      <input type="text" id="userInput" placeholder="Спросить OrcaAI" autocomplete="off">
+      <button id="sendBtn" disabled>➤</button>
     </div>
   </div>
 
   <script>
-    /const API_KEY = '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';
-    
-    const MODEL_LIST = [
-      "deepseek/deepseek-chat:free",
-      "openrouter/free"
-    ];
-    
+    const API_KEY = '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';
+    const MODEL_LIST = ['deepseek/deepseek-chat:free', 'openrouter/free'];
+
     const chatMessages = document.getElementById('chatMessages');
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
     const newChatBtn = document.getElementById('newChatBtn');
-    
+    const settingsBtn = document.getElementById('settingsBtn');
+    const themeMenu = document.getElementById('themeMenu');
+    const modeBtn = document.getElementById('modeBtn');
+    const modeMenu = document.getElementById('modeMenu');
+    const chatContainer = document.getElementById('chatContainer');
+
+    // Настройки по умолчанию
+    let currentTheme = localStorage.getItem('orca-theme') || 'dark';
+    let currentMode = localStorage.getItem('orca-mode') || 'fast'; // fast или thinking
+
+    document.body.className = 'theme-' + currentTheme;
+    updateModeUI();
+
     let conversationHistory = [
       {
         role: 'system',
-        content: 'Ты — OrcaAI, дружелюбный AI-ассистент от OrcaAbyss 🐋. Никогда не говори про модели, API или OpenRouter. Если спрашивают кто ты — отвечай: "Я OrcaAI 🐋". Общайся дружелюбно, по-русски, коротко и по делу.'
+        content: 'Ты — OrcaAI от OrcaAbyss 🐋. Отвечай дружелюбно, по-русски, коротко и по делу. Не говори про модели, API или OpenRouter.'
       }
     ];
-    
+
+    // Функции интерфейса
     function addMessage(text, sender) {
       const msgDiv = document.createElement('div');
       msgDiv.classList.add('message', sender);
@@ -201,33 +438,86 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
       return msgDiv;
     }
-    
-    function typeEffect(text, element, speed = 25) {
-      element.innerHTML = "";
-      let i = 0;
 
+    // Анимация печати с блюром (быстрее)
+    function typeEffect(text, element, speed = 15) {
+      element.innerHTML = '';
+      let i = 0;
       function type() {
         if (i < text.length) {
-          const span = document.createElement("span");
-          
-          if (text[i] === ' ') {
-            span.innerHTML = '&nbsp;';
-          } else {
-            span.textContent = text[i];
-          }
-          
-          span.style.animationDelay = (i * 0.02) + "s";
+          const span = document.createElement('span');
+          span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+          span.style.animationDelay = (i * 0.015) + 's';
           element.appendChild(span);
           chatMessages.scrollTop = chatMessages.scrollHeight;
-          
           i++;
           setTimeout(type, speed);
         }
       }
-
       type();
     }
-    
+
+    // Три точки анимации думания
+    function showThinkingDots(element) {
+      element.innerHTML = '<div class="thinking-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+    }
+
+    // Отправка сообщения
+    async function sendMessage() {
+      const prompt = userInput.value.trim();
+      if (!prompt) return;
+
+      sendBtn.disabled = true;
+      userInput.disabled = true;
+      updateSendButton();
+
+      addMessage(prompt, 'user');
+      userInput.value = '';
+      updateSendButton();
+      conversationHistory.push({ role: 'user', content: prompt });
+
+      // Создаём блок ответа бота
+      const botMsg = document.createElement('div');
+      botMsg.classList.add('message', 'bot');
+      chatMessages.appendChild(botMsg);
+
+      // Показываем анимацию думания (точки)
+      showThinkingDots(botMsg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      // Если думающий режим — этапы
+      if (currentMode === 'thinking') {
+        await new Promise(r => setTimeout(r, 800));
+        botMsg.innerHTML = '<span style="color: var(--text-secondary); font-style: italic;">Анализ...</span>';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        await new Promise(r => setTimeout(r, 1200));
+        botMsg.innerHTML = '<span style="color: var(--text-secondary); font-style: italic;">Думаю...</span>';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        await new Promise(r => setTimeout(r, 1000));
+      } else {
+        // Быстрый режим — просто небольшая пауза с точками
+        await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
+      }
+
+      // Запрос к API
+      const reply = await tryModels(conversationHistory);
+
+      if (reply) {
+        // Очищаем блок и запускаем печать
+        botMsg.innerHTML = '';
+        typeEffect(reply, botMsg, 15);
+        conversationHistory.push({ role: 'assistant', content: reply });
+      } else {
+        botMsg.innerHTML = '❌ Все модели легли. Попробуй позже.';
+      }
+
+      sendBtn.disabled = false;
+      userInput.disabled = false;
+      updateSendButton();
+      userInput.focus();
+    }
+
+    // Пробуем модели
     async function tryModels(messages) {
       for (const model of MODEL_LIST) {
         try {
@@ -244,75 +534,99 @@
               max_tokens: 2048
             })
           });
-          
           const data = await response.json();
-          
           if (data.choices && data.choices[0] && data.choices[0].message) {
             return data.choices[0].message.content;
           }
-        } catch (error) {
-          console.log('Ошибка с моделью', model);
-        }
+        } catch (e) {}
       }
       return null;
     }
-    
-    async function sendMessage() {
-      const prompt = userInput.value.trim();
-      if (!prompt) return;
-      
-      sendBtn.disabled = true;
-      userInput.disabled = true;
-      
-      addMessage(prompt, 'user');
-      userInput.value = '';
-      conversationHistory.push({ role: 'user', content: prompt });
-      
-      const botMsg = document.createElement('div');
-      botMsg.classList.add('message', 'bot');
-      chatMessages.appendChild(botMsg);
-      
-      const reply = await tryModels(conversationHistory);
-      
-      if (reply) {
-        typeEffect(reply, botMsg, 25);
-        conversationHistory.push({ role: 'assistant', content: reply });
+
+    // Обновление кнопки отправки
+    function updateSendButton() {
+      if (userInput.value.trim()) {
+        sendBtn.classList.add('active');
+        sendBtn.disabled = false;
       } else {
-        botMsg.textContent = '❌ Все модели легли. Попробуй позже.';
+        sendBtn.classList.remove('active');
+        sendBtn.disabled = true;
       }
-      
-      sendBtn.disabled = false;
-      userInput.disabled = false;
-      userInput.focus();
     }
-    
+
+    // Сброс чата
     function resetChat() {
       conversationHistory = [
         {
           role: 'system',
-          content: 'Ты — OrcaAI, дружелюбный AI-ассистент от OrcaAbyss 🐋.'
+          content: 'Ты — OrcaAI от OrcaAbyss 🐋. Отвечай дружелюбно, по-русски, коротко и по делу.'
         }
       ];
       chatMessages.innerHTML = '';
       addMessage('🐋 Привет! Я OrcaAI. Задавай любой вопрос!', 'bot');
     }
-    
+
+    // Меню тем
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      themeMenu.classList.toggle('show');
+      modeMenu.classList.remove('show');
+    });
+
+    document.querySelectorAll('.theme-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.theme;
+        document.body.className = 'theme-' + theme;
+        currentTheme = theme;
+        localStorage.setItem('orca-theme', theme);
+        themeMenu.classList.remove('show');
+      });
+    });
+
+    // Меню режимов
+    modeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modeMenu.classList.toggle('show');
+      themeMenu.classList.remove('show');
+    });
+
+    document.querySelectorAll('.mode-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMode = btn.dataset.mode;
+        localStorage.setItem('orca-mode', currentMode);
+        updateModeUI();
+        modeMenu.classList.remove('show');
+      });
+    });
+
+    function updateModeUI() {
+      document.querySelectorAll('.mode-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === currentMode);
+      });
+      modeBtn.textContent = currentMode === 'fast' ? '⚡' : '🧠';
+    }
+
+    // Закрытие меню при клике вне
+    document.addEventListener('click', (e) => {
+      if (!themeMenu.contains(e.target) && e.target !== settingsBtn) {
+        themeMenu.classList.remove('show');
+      }
+      if (!modeMenu.contains(e.target) && e.target !== modeBtn) {
+        modeMenu.classList.remove('show');
+      }
+    });
+
+    // Обработчики ввода
     sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('input', updateSendButton);
     userInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendMessage();
     });
     newChatBtn.addEventListener('click', resetChat);
-    
+
+    // Запуск
     resetChat();
-  </script>
-  
-  <!-- PWA Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('✅ Готово к установке!'))
-        .catch(() => console.log('❌ Ошибка'));
-    }
+    updateSendButton();
   </script>
 </body>
 </html>
