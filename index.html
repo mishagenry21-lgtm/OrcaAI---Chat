@@ -38,7 +38,51 @@
 
         .btn-circle { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--icon-bg); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-mode { border-radius: 21px; padding: 0 12px; height: 42px; display: flex; align-items: center; gap: 5px; background: var(--icon-bg); border: none; color: white; cursor: pointer; }
+
+        const systemPrompt = { 
+    role: "system", 
+    content: "Ты — OrcaAI, мощный ИИ-помощник. ПРАВИЛА: 1. Никогда не говори, что ты Google или модель LLM. На вопрос 'Кто ты?' отвечай 'Я OrcaAI'. 2. Никаких смайликов. 3. Каждое новое предложение пиши с новой строки. 4. Веди себя как профессиональный техно-интерфейс." 
+};
+
+        function typeEffect(text, element) {
+    const htmlContent = marked.parse(text);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    const nodes = Array.from(tempDiv.childNodes);
+    let nodeIndex = 0;
+
+    function processNode() {
+        if (nodeIndex < nodes.length) {
+            const node = nodes[nodeIndex];
+            if (node.nodeType === Node.TEXT_NODE) {
+                let charIdx = 0;
+                const txt = node.textContent;
+                function charLoop() {
+                    if (charIdx < txt.length) {
+                        const span = document.createElement('span');
+                        span.className = 'letter'; // Класс для анимации появления
+                        span.innerText = txt[charIdx];
+                        element.appendChild(span);
+                        charIdx++;
+                        setTimeout(charLoop, 30); // Скорость печати
+                    } else { nodeIndex++; processNode(); }
+                }
+                charLoop();
+            } else {
+                const clone = node.cloneNode(true);
+                clone.style.opacity = '1';
+                element.appendChild(clone);
+                nodeIndex++;
+                processNode();
+            }
+            document.getElementById('chat-window').scrollTo(0, document.getElementById('chat-window').scrollHeight);
+        }
+    }
+    processNode();
+        }
         
+    
         /* Белая кнопка Голос/Отправить */
         .action-btn { height: 42px; border-radius: 21px; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: 0.2s; cursor: pointer; }
         .voice-style { background: white; color: black; padding: 0 18px; gap: 8px; }
