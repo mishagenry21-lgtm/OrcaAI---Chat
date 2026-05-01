@@ -3,73 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OrcaAI</title>
+    <title>OrcaAI Professional</title>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0b0b0b">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.min.js"></script>
+    
     <style>
         :root {
             --bg-color: #0b0b0b;
             --text-color: #ffffff;
-            --msg-user-bg: #2a2a2a;
-            --input-bg: #1a1a1a;
+            --msg-user-bg: #222222;
+            --accent-color: #00aaff;
+            --input-bg: #151515;
+            --panel-bg: #1a1a1a;
+            --border-color: rgba(255,255,255,0.08);
         }
-        [data-theme="white"] { --bg-color: #f5f5f5; --text-color: #000000; --msg-user-bg: #e0e0e0; --input-bg: #ffffff; }
-        [data-theme="grey"] { --bg-color: #333333; --text-color: #f0f0f0; --msg-user-bg: #444444; --input-bg: #2a2a2a; }
-        [data-theme="blue"] { --bg-color: #001f3f; --text-color: #ffffff; --msg-user-bg: #003366; --input-bg: #002b55; }
 
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: 0.3s; }
-        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .menu-btn { background: none; border: none; color: var(--text-color); font-size: 24px; cursor: pointer; }
+        [data-theme="white"] {
+            --bg-color: #ffffff; --text-color: #111111; --msg-user-bg: #f0f0f0; --input-bg: #f7f7f7; --panel-bg: #ffffff; --border-color: rgba(0,0,0,0.1);
+        }
+        [data-theme="grey"] {
+            --bg-color: #2c2c2c; --text-color: #eeeeee; --msg-user-bg: #3d3d3d; --input-bg: #333333; --panel-bg: #2c2c2c; --border-color: rgba(255,255,255,0.1);
+        }
+        [data-theme="blue"] {
+            --bg-color: #001529; --text-color: #ffffff; --msg-user-bg: #002140; --input-bg: #001c36; --panel-bg: #001529; --border-color: rgba(255,255,255,0.1);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            transition: background 0.3s, color 0.3s;
+            overflow: hidden;
+        }
+
+        /* Шапка */
+        header { 
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color);
+            z-index: 10;
+        }
+
+        .logo { font-weight: 700; font-size: 20px; letter-spacing: 1px; }
+        .menu-btn { background: none; border: none; color: var(--text-color); font-size: 26px; cursor: pointer; padding: 5px; }
+
+        /* Окна меню */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 99;
+        }
+
+        .dropdown-menu {
+            display: none; position: absolute; background: var(--panel-bg); 
+            border: 1px solid var(--border-color); border-radius: 16px; 
+            padding: 12px; z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            width: 250px; animation: slideIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dropdown-menu.active { display: block; }
+        .dropdown-menu h4 { margin: 10px 5px 5px; font-size: 12px; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
         
-        .dropdown { display: none; position: absolute; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: white; }
-        .dropdown.active { display: block; }
-        .dropdown button { display: block; width: 100%; padding: 10px; background: none; border: none; color: white; text-align: left; cursor: pointer; border-radius: 6px; }
+        .menu-item {
+            width: 100%; padding: 12px; background: none; border: none; 
+            color: var(--text-color); text-align: left; cursor: pointer; 
+            border-radius: 8px; font-size: 15px; transition: 0.2s;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.05); }
+        .menu-item span { font-size: 12px; opacity: 0.6; }
 
-        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; padding-bottom: 100px; }
-        .message { max-width: 85%; padding: 12px 18px; border-radius: 20px; font-size: 16px; line-height: 1.6; }
-        .user-msg { align-self: flex-end; background: var(--msg-user-bg); border-bottom-right-radius: 4px; }
-        .orca-msg { align-self: flex-start; display: flex; gap: 15px; }
+        /* Зона чата */
+        #chat-window { 
+            flex: 1; overflow-y: auto; padding: 20px; 
+            display: flex; flex-direction: column; gap: 25px; 
+            scroll-behavior: smooth; padding-bottom: 120px;
+        }
 
-        .orca-wrapper { position: relative; width: 32px; height: 32px; flex-shrink: 0; margin-top: 5px; }
-        .rainbow-orbit { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(red, orange, yellow, green, blue, violet, red); filter: blur(6px); animation: rotate 3s linear infinite; }
+        .message { max-width: 88%; font-size: 16px; line-height: 1.6; position: relative; }
+        .user-msg { 
+            align-self: flex-end; background: var(--msg-user-bg); 
+            padding: 12px 18px; border-radius: 20px 20px 4px 20px; 
+        }
+        .orca-msg { align-self: flex-start; display: flex; gap: 15px; width: 100%; }
 
-        .input-area-container { position: fixed; bottom: 0; width: 100%; padding: 15px 0 25px; background: var(--bg-color); }
-        .input-capsule { background: var(--input-bg); border-radius: 30px; display: flex; align-items: center; padding: 8px 12px; gap: 10px; border: 1px solid rgba(255,255,255,0.05); margin: 0 20px; }
-        input[type="text"] { flex: 1; background: none; border: none; color: var(--text-color); padding: 10px; outline: none; font-size: 16px; }
+        .orca-wrapper { position: relative; width: 34px; height: 34px; flex-shrink: 0; margin-top: 5px; }
+        .rainbow-orbit { 
+            position: absolute; width: 100%; height: 100%; border-radius: 50%; 
+            background: conic-gradient(from 0deg, #ff0000, #00ff00, #00aaff, #ff0000); 
+            filter: blur(8px); animation: rotate 4s linear infinite; opacity: 0.7;
+        }
+
+        /* Стили для кода и текста */
+        .text-area pre { 
+            background: #000; padding: 15px; border-radius: 10px; 
+            overflow-x: auto; border: 1px solid #333; margin: 10px 0;
+        }
+        .text-area code { font-family: 'Consolas', monospace; color: #00ffaa; font-size: 14px; }
+        .text-area p { margin: 0 0 12px 0; }
+
+        /* Поле ввода */
+        .input-container { 
+            position: fixed; bottom: 0; width: 100%; 
+            padding: 15px 20px 30px; background: var(--bg-color); 
+        }
+        .input-capsule { 
+            background: var(--input-bg); border-radius: 30px; 
+            display: flex; align-items: center; padding: 6px 14px; 
+            gap: 12px; border: 1px solid var(--border-color);
+        }
         
-        #send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: #222; color: #555; cursor: pointer; transition: 0.3s; }
-        #send-btn.active { background: #fff; color: #000; }
+        input[type="text"] { 
+            flex: 1; background: none; border: none; color: var(--text-color); 
+            padding: 12px 5px; outline: none; font-size: 16px; 
+        }
+        
+        .icon-btn { background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 20px; opacity: 0.7; transition: 0.2s; padding: 5px; }
+        .icon-btn:hover { opacity: 1; }
+        .icon-btn.recording { color: #ff3b30; animation: pulse 1.5s infinite; }
 
-        .letter { opacity: 0; filter: blur(8px); animation: appear 0.6s forwards; display: inline-block; }
-        @keyframes appear { to { opacity: 1; filter: blur(0); } }
+        #send-btn { 
+            width: 38px; height: 38px; border-radius: 50%; border: none; 
+            background: #222; color: #555; display: flex; 
+            justify-content: center; align-items: center; transition: 0.3s;
+        }
+        #send-btn.active { background: #ffffff; color: #000000; }
+
+        /* Анимации */
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
-        .dot-typing { display: flex; gap: 4px; padding: 10px; }
-        .dot { width: 5px; height: 5px; background: #555; border-radius: 50%; animation: bounce 1s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        .letter { opacity: 0; filter: blur(10px); animation: appear 0.7s forwards; display: inline-block; white-space: pre-wrap; }
+        @keyframes appear { to { opacity: 1; filter: blur(0); } }
+
+        .dot-typing { display: flex; gap: 5px; padding: 12px; }
+        .dot { width: 6px; height: 6px; background: #444; border-radius: 50%; animation: bounce 1.2s infinite; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
     </style>
 </head>
 <body data-theme="dark">
 
+    <div class="modal-overlay" id="overlay" onclick="closeAllMenus()"></div>
+
     <header>
-        <div style="font-weight: 600; font-size: 19px;">OrcaAI 🐋</div>
-        <button class="menu-btn" onclick="toggleMenu('top-menu')">⋮</button>
-        <div id="top-menu" class="dropdown" style="top: 50px; right: 20px; width: 220px;">
-            <button onclick="setTheme('dark')">⚫ Черная тема</button>
-            <button onclick="setTheme('white')">⚪ Белая тема</button>
-            <button onclick="setTheme('grey')">🔘 Серая тема</button>
-            <button onclick="setTheme('blue')">🔵 Синяя тема</button>
-            <hr style="opacity: 0.1">
-            <div style="padding: 10px 5px;">
-                <span style="font-size: 11px; opacity: 0.5;">OPENROUTER API KEY:</span>
-                <input type="password" id="api-key-storage" placeholder="sk-or-..." 
-                       style="width: 100%; background: #000; border: 1px solid #333; color: #fff; border-radius: 4px; margin-top: 5px;"
-                       onchange="saveKey(this.value)">
+        <div class="logo">OrcaAI</div>
+        <button class="menu-btn" onclick="toggleMenu('main-menu', event)">⋮</button>
+        <div id="main-menu" class="dropdown-menu" style="top: 60px; right: 20px;">
+            <h4>Настройки темы</h4>
+            <button class="menu-item" onclick="setTheme('dark')">Черная тема</button>
+            <button class="menu-item" onclick="setTheme('white')">Белая тема</button>
+            <button class="menu-item" onclick="setTheme('grey')">Серая тема</button>
+            <button class="menu-item" onclick="setTheme('blue')">Синяя тема</button>
+            <hr style="opacity: 0.1; margin: 10px 0;">
+            <h4>Безопасность</h4>
+            <div style="padding: 5px 12px;">
+                <span style="font-size: 11px; opacity: 0.5;">API KEY:</span>
+                <input type="password" id="api-key-input" placeholder="sk-or-..." 
+                       style="width: 100%; background: #000; border: 1px solid #333; color: #fff; border-radius: 6px; padding: 8px; margin-top: 5px;"
+                       onchange="saveApiKey(this.value)">
             </div>
-            <div style="padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <span>Думать</span>
+            <hr style="opacity: 0.1; margin: 10px 0;">
+            <button class="menu-item" onclick="clearHistory()" style="color: #ff4444;">Очистить историю чата</button>
+            <div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>Режим раздумий</span>
                 <input type="checkbox" id="think-mode">
             </div>
         </div>
@@ -77,105 +188,249 @@
 
     <div id="chat-window"></div>
 
-    <div class="input-area-container">
+    <div class="input-container">
         <div class="input-capsule">
-            <button onclick="toggleMenu('mode-menu')" style="background:none; border:none; color:#ffcc00; font-size:20px; cursor:pointer;">⚡</button>
-            <div id="mode-menu" class="dropdown" style="bottom: 80px; left: 20px;">
-                <button onclick="setMode('Fast')">🚀 Быстрый</button>
-                <button onclick="setMode('Deep')">🧠 Думающий</button>
+            <button class="icon-btn" onclick="toggleMenu('mode-menu', event)" id="current-mode-icon">⚡</button>
+            <div id="mode-menu" class="dropdown-menu" style="bottom: 85px; left: 20px;">
+                <button class="menu-item" onclick="setMode('Fast')">
+                    Быстрый
+                    <span>Оптимизирован для простых ответов</span>
+                </button>
+                <button class="menu-item" onclick="setMode('Deep')">
+                    Думающий
+                    <span>Решает сложные логические задачи</span>
+                </button>
             </div>
-            <input type="text" id="user-input" placeholder="Спросить OrcaAI" oninput="checkInput()" onkeypress="if(event.key==='Enter') sendMessage()">
+            
+            <input type="text" id="user-input" placeholder="Спросить OrcaAI" autocomplete="off" oninput="checkInput()" onkeypress="if(event.key==='Enter') sendMessage()">
+            
+            <button class="icon-btn" id="voice-btn" onclick="startVoice()">🎤</button>
             <button id="send-btn" onclick="sendMessage()" disabled>➔</button>
         </div>
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-
-        let apiKey = localStorage.getItem('orca_key') || '';
-        document.getElementById('api-key-storage').value = apiKey;
+        let apiKey = localStorage.getItem('orca_pro_key') || '';
         let currentMode = 'Fast';
-        let chatHistory = [{ role: "system", content: "Ты — OrcaAI. ПРАВИЛА: 1. Нет эмодзи. 2. Каждое предложение с новой строки. 3. Ты OrcaAI." }];
+        let chatHistory = JSON.parse(localStorage.getItem('orca_history')) || [];
+        
+        const systemPrompt = { 
+            role: "system", 
+            content: "Ты — OrcaAI. ПРАВИЛА: 1. Никаких эмодзи. 2. Каждое новое предложение начинай строго с новой строки. 3. Ты OrcaAI. 4. Если пишешь код, используй Markdown блоки." 
+        };
 
-        function saveKey(v) { apiKey = v; localStorage.setItem('orca_key', v); alert('Ключ сохранен!'); }
-        function toggleMenu(id) { document.getElementById(id).classList.toggle('active'); }
-        function setTheme(t) { document.body.setAttribute('data-theme', t); toggleMenu('top-menu'); }
-        function setMode(m) { currentMode = m; toggleMenu('mode-menu'); }
+        // Инициализация при загрузке
+        window.onload = () => {
+            document.getElementById('api-key-input').value = apiKey;
+            renderHistory();
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        };
 
-        function checkInput() {
-            const input = document.getElementById('user-input');
-            const btn = document.getElementById('send-btn');
-            btn.classList.toggle('active', input.value.trim().length > 0);
-            btn.disabled = input.value.trim().length === 0;
+        // Логика меню
+        function toggleMenu(id, event) {
+            event.stopPropagation();
+            const menu = document.getElementById(id);
+            const isActive = menu.classList.contains('active');
+            closeAllMenus();
+            if (!isActive) {
+                menu.classList.add('active');
+                document.getElementById('overlay').style.display = 'block';
+            }
         }
 
-        async function sendMessage() {
-            if(!apiKey) { alert('Введи API Key в меню!'); toggleMenu('top-menu'); return; }
-            const input = document.getElementById('user-input');
-            const chatWindow = document.getElementById('chat-window');
-            const text = input.value.trim();
-            if (!text) return;
+        function closeAllMenus() {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            document.getElementById('overlay').style.display = 'none';
+        }
 
-            chatWindow.innerHTML += `<div class="message user-msg">${text}</div>`;
-            chatHistory.push({ role: "user", content: text });
-            input.value = ''; checkInput();
-            chatWindow.scrollTo(0, chatWindow.scrollHeight);
+        function setTheme(t) {
+            document.body.setAttribute('data-theme', t);
+            localStorage.setItem('orca_theme', t);
+            closeAllMenus();
+        }
 
+        function setMode(m) {
+            currentMode = m;
+            document.getElementById('current-mode-icon').innerText = m === 'Fast' ? '⚡' : '🧠';
+            closeAllMenus();
+        }
+
+        function saveApiKey(v) {
+            apiKey = v.trim();
+            localStorage.setItem('orca_pro_key', apiKey);
+        }
+
+        function checkInput() {
+            const val = document.getElementById('user-input').value.trim();
+            const btn = document.getElementById('send-btn');
+            btn.classList.toggle('active', val.length > 0);
+            btn.disabled = val.length === 0;
+        }
+
+        // История переписки
+        function renderHistory() {
+            const win = document.getElementById('chat-window');
+            win.innerHTML = '';
+            chatHistory.forEach(msg => {
+                if(msg.role === 'user') appendUserMsg(msg.content, false);
+                if(msg.role === 'assistant') appendOrcaMsg(msg.content, false);
+            });
+            win.scrollTo(0, win.scrollHeight);
+        }
+
+        function clearHistory() {
+            chatHistory = [];
+            localStorage.removeItem('orca_history');
+            renderHistory();
+            closeAllMenus();
+        }
+
+        function appendUserMsg(text, save = true) {
+            const win = document.getElementById('chat-window');
+            win.innerHTML += `<div class="message user-msg">${text}</div>`;
+            if(save) chatHistory.push({role: 'user', content: text});
+            win.scrollTo(0, win.scrollHeight);
+        }
+
+        function appendOrcaMsg(text, save = true) {
+            const win = document.getElementById('chat-window');
             const id = 'orca-' + Date.now();
-            chatWindow.innerHTML += `<div class="orca-msg" id="${id}"><div class="orca-wrapper"><div class="rainbow-orbit"></div></div><div class="orca-content"><div class="think-box" style="color:grey; font-size:12px; display:none;"></div><div class="dot-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="text-area"></div></div></div>`;
+            win.innerHTML += `
+                <div class="orca-msg" id="${id}">
+                    <div class="orca-wrapper"><div class="rainbow-orbit"></div></div>
+                    <div class="orca-content"><div class="text-area"></div></div>
+                </div>`;
             
             const area = document.getElementById(id).querySelector('.text-area');
-            const dots = document.getElementById(id).querySelector('.dot-typing');
-            const think = document.getElementById(id).querySelector('.think-box');
+            if(save) {
+                chatHistory.push({role: 'assistant', content: text});
+                localStorage.setItem('orca_history', JSON.stringify(chatHistory));
+                typeEffect(text, area);
+            } else {
+                area.innerHTML = marked.parse(text);
+            }
+        }
 
+        // Основная функция отправки
+        async function sendMessage() {
+            if(!apiKey) { alert('Введите API Key в настройках'); toggleMenu('main-menu', event); return; }
+            
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            appendUserMsg(text);
+            input.value = '';
+            checkInput();
+
+            const win = document.getElementById('chat-window');
+            const tempId = 'loading-' + Date.now();
+            win.innerHTML += `
+                <div class="orca-msg" id="${tempId}">
+                    <div class="orca-wrapper"><div class="rainbow-orbit"></div></div>
+                    <div class="orca-content">
+                        <div class="status-text" style="color:grey; font-size:12px; margin-left:12px;"></div>
+                        <div class="dot-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    </div>
+                </div>`;
+            win.scrollTo(0, win.scrollHeight);
+
+            const status = document.getElementById(tempId).querySelector('.status-text');
             if(document.getElementById('think-mode').checked) {
-                think.style.display = 'block'; think.innerText = 'Анализ...';
-                await new Promise(r => setTimeout(r, 1500));
-                think.innerText = 'Думаю...';
-                await new Promise(r => setTimeout(r, 1500));
-                think.style.display = 'none';
+                status.innerText = 'Анализ...'; await new Promise(r => setTimeout(r, 1200));
+                status.innerText = 'Построение логики...'; await new Promise(r => setTimeout(r, 1200));
             }
 
             const model = currentMode === 'Fast' ? 'google/gemini-2.0-flash-lite-001' : 'deepseek/deepseek-r1';
+            
             try {
-                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ "model": model, "messages": chatHistory })
+                    body: JSON.stringify({ "model": model, "messages": [systemPrompt, ...chatHistory] })
                 });
-                const data = await res.json();
-                let aiText = data.choices[0].message.content;
-                aiText = aiText.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}]/gu, '');
-                aiText = aiText.replace(/([.!?])\s+(?=[А-ЯA-Z])/g, "$1\n\n");
+
+                const data = await response.json();
+                let aiResponse = data.choices[0].message.content;
                 
-                dots.style.display = 'none';
-                chatHistory.push({ role: "assistant", content: aiText });
-                typeOrca(aiText, area);
-            } catch (e) { dots.style.display = 'none'; area.innerText = "Ошибка. Проверь ключ."; }
+                // Очистка от эмодзи и форматирование
+                aiResponse = aiResponse.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}]/gu, '');
+                aiResponse = aiResponse.replace(/([.!?])\s+(?=[А-ЯA-Z])/g, "$1\n\n");
+
+                document.getElementById(tempId).remove();
+                appendOrcaMsg(aiResponse);
+
+            } catch (e) {
+                document.getElementById(tempId).remove();
+                alert('Ошибка сервера. Проверьте ключ или соединение.');
+            }
         }
 
-        function typeOrca(text, element) {
-            const words = text.split(' ');
-            let i = 0;
-            function type() {
-                if (i < words.length) {
-                    let l = 0; const word = words[i];
-                    function tWord() {
-                        if (l < word.length) {
-                            const s = document.createElement('span'); s.className = 'letter';
-                            if(word[l] === "\n") element.appendChild(document.createElement('br'));
-                            else { s.innerText = word[l]; element.appendChild(s); }
-                            l++; setTimeout(tWord, 40);
-                        } else { element.appendChild(document.createTextNode(' ')); i++; setTimeout(type, 50); }
-                        document.getElementById('chat-window').scrollTo(0, document.getElementById('chat-window').scrollHeight);
+        // Анимация печати с поддержкой Markdown
+        function typeEffect(text, element) {
+            const htmlContent = marked.parse(text);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            const nodes = Array.from(tempDiv.childNodes);
+            let nodeIndex = 0;
+
+            function processNode() {
+                if (nodeIndex < nodes.length) {
+                    const node = nodes[nodeIndex];
+                    const clone = node.cloneNode(true);
+                    
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        typeTextNode(node.textContent, element);
+                    } else {
+                        clone.style.opacity = '0';
+                        element.appendChild(clone);
+                        setTimeout(() => { 
+                            clone.style.opacity = '1'; 
+                            clone.style.transition = '0.5s';
+                            nodeIndex++; processNode();
+                        }, 50);
                     }
-                    tWord();
+                    document.getElementById('chat-window').scrollTo(0, document.getElementById('chat-window').scrollHeight);
                 }
             }
-            type();
+
+            function typeTextNode(txt, target) {
+                let charIdx = 0;
+                function charLoop() {
+                    if (charIdx < txt.length) {
+                        const span = document.createElement('span');
+                        span.className = 'letter';
+                        span.innerText = txt[charIdx];
+                        target.appendChild(span);
+                        charIdx++;
+                        setTimeout(charLoop, 35);
+                    } else {
+                        nodeIndex++; processNode();
+                    }
+                }
+                charLoop();
+            }
+            processNode();
         }
 
-        window.onclick = e => { if (!e.target.matches('.menu-btn')) document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active')); }
+        // Голосовой ввод
+        function startVoice() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { alert('Ваш браузер не поддерживает голосовой ввод'); return; }
+
+            const recognition = new SpeechRecognition();
+            const btn = document.getElementById('voice-btn');
+
+            recognition.onstart = () => btn.classList.add('recording');
+            recognition.onend = () => btn.classList.remove('recording');
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('user-input').value = transcript;
+                checkInput();
+            };
+            recognition.start();
+        }
     </script>
 </body>
 </html>
