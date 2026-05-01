@@ -3,348 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OrcaAI Dream Edition</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1a1a1a">
-    
+    <title>OrcaAI Elite</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
     <style>
         :root {
             --bg-color: #0b0b0b;
             --text-color: #ffffff;
-            --msg-user-bg: #222222;
-            --input-panel-bg: #1a1a1a; /* Цвет темной панели ввода */
-            --icon-btn-bg: #2a2a2a; /* Фон круглых кнопок */
-            --border-color: rgba(255,255,255,0.05);
+            --panel-bg: #1a1a1a;
+            --icon-bg: #2a2a2a;
+            --accent: #ffffff;
         }
-
-        /* Другие темы пока отключим для точности реализации темной */
-        [data-theme="white"] { --bg-color: #ffffff; --text-color: #111111; --msg-user-bg: #f0f0f0; --input-panel-bg: #e0e0e0; --icon-btn-bg: #cccccc; }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { background: var(--bg-color); color: var(--text-color); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        body { 
-            background-color: var(--bg-color); color: var(--text-color); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; 
-        }
+        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .logo { font-weight: bold; font-size: 18px; }
+        .menu-trigger { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 5px; z-index: 110; }
 
-        /* Шапка (минималистичная) */
-        header { 
-            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;
-        }
-        .logo { font-weight: 600; font-size: 18px; letter-spacing: 0.5px; opacity: 0.9; }
-        .menu-btn { background: none; border: none; color: var(--text-color); font-size: 24px; cursor: pointer; opacity: 0.7; }
-
-        /* Окна меню */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
-        .dropdown-menu {
-            display: none; position: absolute; background: #1a1a1a; 
-            border: 1px solid var(--border-color); border-radius: 14px; padding: 10px; z-index: 100; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 220px; animation: slideIn 0.2s ease-out;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .dropdown-menu.active { display: block; }
-        .menu-item {
-            width: 100%; padding: 10px 15px; background: none; border: none; color: white; 
-            text-align: left; cursor: pointer; border-radius: 8px; font-size: 15px;
-            display: flex; flex-direction: column; gap: 2px;
-        }
-        .menu-item:hover { background: rgba(255,255,255,0.05); }
-        .menu-item span { font-size: 11px; opacity: 0.6; }
-
-        /* Зона чата */
-        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 150px; }
-        .message { max-width: 85%; font-size: 16px; line-height: 1.6; }
-        .user-msg { align-self: flex-end; background: var(--msg-user-bg); padding: 12px 16px; border-radius: 18px 18px 4px 18px; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 160px; }
+        .message { max-width: 85%; line-height: 1.5; font-size: 16px; }
+        .user-msg { align-self: flex-end; background: #222; padding: 12px 16px; border-radius: 18px 18px 4px 18px; }
         .orca-msg { align-self: flex-start; display: flex; gap: 12px; width: 100%; }
-        .orca-wrapper { position: relative; width: 30px; height: 30px; flex-shrink: 0; margin-top: 5px; }
-        .rainbow-orbit { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(red, green, blue, red); filter: blur(5px); animation: rotate 4s linear infinite; opacity: 0.6; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: conic-gradient(red, blue, green, red); filter: blur(4px); animation: rot 4s linear infinite; flex-shrink: 0; }
+        @keyframes rot { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Панель ввода по фото */
+        .input-panel { position: fixed; bottom: 0; width: 100%; background: var(--panel-bg); border-radius: 24px 24px 0 0; padding: 15px 15px 25px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
+        #user-input { width: 100%; background: none; border: none; color: white; font-size: 18px; padding: 5px; }
+        #user-input::placeholder { color: #666; }
+
+        .controls-row { display: flex; justify-content: space-between; align-items: center; }
+        .group { display: flex; gap: 10px; align-items: center; }
+
+        .btn-circle { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--icon-bg); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-mode { border-radius: 21px; padding: 0 12px; height: 42px; display: flex; align-items: center; gap: 5px; background: var(--icon-bg); border: none; color: white; cursor: pointer; }
         
-        /* Стили Markdown текста */
-        .text-area p { margin: 0 0 10px 0; }
-        .text-area pre { background: #000; padding: 12px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin: 10px 0; }
-        .text-area code { font-family: monospace; color: #00ffaa; font-size: 14px; }
+        /* Белая кнопка Голос/Отправить */
+        .action-btn { height: 42px; border-radius: 21px; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: 0.2s; cursor: pointer; }
+        .voice-style { background: white; color: black; padding: 0 18px; gap: 8px; }
+        .send-style { background: #2a2a2a; color: white; width: 42px; }
 
-        /* --- РЕАЛИЗАЦИЯ МЕЧТЫ: ПОЛЕ ВВОДА ТОЧЬ-В-ТОЧЬ --- */
+        /* Выпадающие меню */
+        .pop-menu { display: none; position: absolute; background: #1a1a1a; border: 1px solid #333; border-radius: 15px; padding: 8px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.8); width: 200px; }
+        .pop-menu.active { display: block; }
+        .pop-item { width: 100%; padding: 12px; background: none; border: none; color: white; text-align: left; border-radius: 8px; cursor: pointer; }
+        .pop-item:hover { background: #252525; }
+
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 105; }
         
-        .dream-input-panel {
-            position: fixed; bottom: 0; width: 100%;
-            background-color: var(--input-panel-bg);
-            border-radius: 24px 24px 0 0; /* Скругление сверху */
-            padding: 15px 15px 20px;
-            display: flex; flex-direction: column; gap: 12px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
-            z-index: 10;
-        }
-
-        /* Само текстовое поле (верхний ряд) */
-        .dream-text-input-wrap { width: 100%; }
-        #user-input {
-            width: 100%; background: none; border: none;
-            color: var(--text-color); font-size: 18px;
-            padding: 5px 10px;
-        }
-        #user-input::placeholder { color: #555; opacity: 1; } /* Точный цвет плейсхолдера */
-
-        /* Ряд кнопок (нижний ряд) */
-        .dream-buttons-row {
-            display: flex; justify-content: space-between; align-items: center;
-            width: 100%;
-        }
-
-        /* Левая группа (скрепка, молния) */
-        .dream-left-btns { display: flex; gap: 10px; }
-
-        /* Общий стиль темных круглых кнопок */
-        .icon-btn {
-            width: 44px; height: 44px; border-radius: 50%; border: none;
-            background-color: var(--icon-btn-bg); color: #fff;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.8;
-        }
-        .icon-btn:hover { opacity: 1; }
-
-        /* Иконка молнии (с галочкой) */
-        .lightning-wrap { position: relative; display: flex; align-items: center; }
-        .lightning-arrow { font-size: 12px; margin-left: 2px; opacity: 0.6; }
-
-        /* Правая группа (микрофон, голосовой режим) */
-        .dream-right-btns { display: flex; gap: 10px; align-items: center; }
-
-        /* БЕЛАЯ КНОПКА: Голосовой режим */
-        .voice-mode-btn {
-            background-color: #ffffff; color: #000000;
-            border: none; border-radius: 22px;
-            height: 44px; padding: 0 18px;
-            display: flex; align-items: center; gap: 8px;
-            font-size: 16px; font-weight: 500;
-            cursor: pointer; transition: 0.2s;
-        }
-        .voice-mode-btn:hover { background-color: #eeeeee; }
-
-        /* Иконка звуковых волн (черная) */
-        .sound-wave-icon {
-            display: flex; gap: 2px; align-items: center; height: 16px;
-        }
-        .wave-bar { width: 2px; background-color: #000; border-radius: 1px; }
-        .wave-bar:nth-child(1) { height: 8px; }
-        .wave-bar:nth-child(2) { height: 14px; }
-        .wave-bar:nth-child(3) { height: 10px; }
-
-        /* --- КОНЕЦ РЕАЛИЗАЦИИ МЕЧТЫ --- */
-
-        /* Кнопка отправки (теперь она скрыта, голос важнее по дизайну, но оставим логику) */
-        #send-btn { display: none; }
-
-        /* Анимации */
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .letter { opacity: 0; filter: blur(8px); animation: appear 0.6s forwards; display: inline-block; white-space: pre-wrap; }
-        @keyframes appear { to { opacity: 1; filter: blur(0); } }
-        .dot-typing { display: flex; gap: 4px; padding: 10px; }
-        .dot { width: 5px; height: 5px; background: #444; border-radius: 50%; animation: bounce 1s infinite; }
-        .dot:nth-child(2) { animation-delay: 0.2s; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        /* Иконки */
+        .icon-svg { width: 20px; height: 20px; fill: currentColor; }
+        .letter { opacity: 0; filter: blur(5px); animation: f 0.5s forwards; display: inline-block; }
+        @keyframes f { to { opacity: 1; filter: blur(0); } }
     </style>
 </head>
-<body data-theme="dark">
+<body>
 
-    <div class="modal-overlay" id="overlay" onclick="closeAllMenus()"></div>
+<div class="overlay" id="overlay" onclick="closeMenus()"></div>
 
-    <header>
-        <div class="logo">OrcaAI</div>
-        <button class="menu-btn" onclick="toggleMenu('main-menu', event)">⋮</button>
-        <div id="main-menu" class="dropdown-menu" style="top: 55px; right: 20px;">
-            <div style="padding: 5px 12px;">
-                <span style="font-size: 11px; opacity: 0.5;">OPENROUTER API KEY:</span>
-                <input type="password" id="api-key-input" placeholder="sk-or-..." 
-                       style="width: 100%; background: #000; border: 1px solid #333; color: #fff; border-radius: 6px; padding: 8px; margin-top: 5px;"
-                       onchange="saveApiKey(this.value)">
-            </div>
-            <hr style="opacity: 0.1; margin: 8px 0;">
-            <button class="menu-item" onclick="clearHistory()" style="color: #ff4444;">Очистить историю</button>
+<header>
+    <div class="logo">OrcaAI</div>
+    <button class="menu-trigger" onclick="openMenu('settings-menu', event)">⋮</button>
+    <div id="settings-menu" class="pop-menu" style="top: 55px; right: 20px;">
+        <div style="padding: 10px;">
+            <span style="font-size: 10px; opacity: 0.5;">API KEY:</span>
+            <input type="password" id="key-in" style="width:100%; background:#000; border:1px solid #444; color:white; margin-top:5px; padding:5px;" onchange="saveKey(this.value)">
         </div>
-    </header>
+        <button class="pop-item" onclick="clearChat()" style="color:red;">Очистить чат</button>
+    </div>
+</header>
 
-    <div id="chat-window"></div>
+<div id="chat-window"></div>
 
-    <div class="dream-input-panel">
-        
-        <div class="dream-text-input-wrap">
-            <input type="text" id="user-input" placeholder="Задайте любой вопрос" autocomplete="off" onkeypress="if(event.key==='Enter') sendMessage()">
-        </div>
-        
-        <div class="dream-buttons-row">
+<div class="input-panel">
+    <input type="text" id="user-input" placeholder="Задайте любой вопрос" oninput="updateUI()" onkeypress="if(event.key==='Enter') send()">
+    
+    <div class="controls-row">
+        <div class="group">
+            <button class="btn-circle">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/></svg>
+            </button>
             
-            <div class="dream-left-btns">
-                <button class="icon-btn">📎</button> <button class="icon-btn lightning-wrap" onclick="toggleMenu('mode-menu', event)">
-                    <span>⚡</span><span class="lightning-arrow">∨</span>
-                </button>
-                <div id="mode-menu" class="dropdown-menu" style="bottom: 75px; left: 15px;">
-                    <button class="menu-item" onclick="setMode('Fast')">Быстрый<span>(Flash)</span></button>
-                    <button class="menu-item" onclick="setMode('Deep')">Думающий<span>(DeepSeek)</span></button>
-                </div>
+            <button class="btn-mode" onclick="openMenu('mode-menu', event)">
+                <svg class="icon-svg" viewBox="0 0 24 24" style="width:16px;"><path d="M7,2V13H10V22L17,10H13L17,2H7Z"/></svg>
+                <span id="mode-label" style="font-size:14px; font-weight:500;">∨</span>
+            </button>
+            <div id="mode-menu" class="pop-menu" style="bottom: 80px; left: 15px;">
+                <button class="pop-item" onclick="setM('Fast')">Быстрый ответы</button>
+                <button class="pop-item" onclick="setM('Deep')">Думающий (DeepSeek)</button>
             </div>
+        </div>
+
+        <div class="group">
+            <button class="btn-circle">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg>
+            </button>
             
-            <div class="dream-right-btns">
-                <button class="icon-btn">🎤</button> <button class="voice-mode-btn" onclick="startVoice()">
-                    <div class="sound-wave-icon">
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                    </div>
+            <div id="action-area">
+                <button class="action-btn voice-style" onclick="startV()">
+                    <svg viewBox="0 0 24 24" style="width:18px; fill:black;"><path d="M10,20H14V4H10V20M4,20H8V12H4V20M16,20H20V12H16V20Z"/></svg>
                     Голосовой режим
                 </button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        let apiKey = localStorage.getItem('orca_dream_key') || '';
-        let currentMode = 'Fast';
-        let chatHistory = JSON.parse(localStorage.getItem('orca_history')) || [];
-        
-        const systemPrompt = { 
-            role: "system", 
-            content: "Ты — OrcaAI. ПРАВИЛА: 1. Нет эмодзи. 2. Каждое предложение с новой строки. 3. Ты OrcaAI. 4. Код в Markdown блоки." 
-        };
+<script>
+    let key = localStorage.getItem('orca_key') || '';
+    let mode = 'Fast';
+    let history = JSON.parse(localStorage.getItem('orca_hist')) || [];
 
-        window.onload = () => {
-            document.getElementById('api-key-input').value = apiKey;
-            renderHistory();
-            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-        };
+    window.onload = () => { 
+        document.getElementById('key-in').value = key;
+        render();
+    };
 
-        // Логика меню
-        function toggleMenu(id, event) {
-            event.stopPropagation();
-            const menu = document.getElementById(id);
-            const isActive = menu.classList.contains('active');
-            closeAllMenus();
-            if (!isActive) {
-                menu.classList.add('active');
-                document.getElementById('overlay').style.display = 'block';
-            }
+    function openMenu(id, e) {
+        e.stopPropagation();
+        closeMenus();
+        document.getElementById(id).classList.add('active');
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closeMenus() {
+        document.querySelectorAll('.pop-menu').forEach(m => m.classList.remove('active'));
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    function setM(m) { mode = m; closeMenus(); }
+    function saveKey(v) { key = v.trim(); localStorage.setItem('orca_key', key); }
+
+    function updateUI() {
+        const input = document.getElementById('user-input').value.trim();
+        const area = document.getElementById('action-area');
+        if(input.length > 0) {
+            area.innerHTML = `<button class="action-btn send-style" onclick="send()">➔</button>`;
+        } else {
+            area.innerHTML = `<button class="action-btn voice-style" onclick="startV()">
+                <svg viewBox="0 0 24 24" style="width:18px; fill:black;"><path d="M10,20H14V4H10V20M4,20H8V12H4V20M16,20H20V12H16V20Z"/></svg>
+                Голосовой режим</button>`;
         }
-        function closeAllMenus() {
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-            document.getElementById('overlay').style.display = 'none';
-        }
-        function setMode(m) { currentMode = m; closeAllMenus(); }
-        function saveApiKey(v) { apiKey = v.trim(); localStorage.setItem('orca_dream_key', apiKey); }
+    }
 
-        // История
-        function renderHistory() {
-            const win = document.getElementById('chat-window');
-            win.innerHTML = '';
-            chatHistory.forEach(msg => {
-                if(msg.role === 'user') appendUserMsg(msg.content, false);
-                if(msg.role === 'assistant') appendOrcaMsg(msg.content, false);
+    function render() {
+        const win = document.getElementById('chat-window');
+        win.innerHTML = '';
+        history.forEach(m => {
+            if(m.role === 'user') win.innerHTML += `<div class="message user-msg">${m.content}</div>`;
+            else win.innerHTML += `<div class="orca-msg"><div class="avatar"></div><div class="message">${marked.parse(m.content)}</div></div>`;
+        });
+        win.scrollTo(0, win.scrollHeight);
+    }
+
+    function clearChat() { history = []; localStorage.removeItem('orca_hist'); render(); closeMenus(); }
+
+    async function send() {
+        const input = document.getElementById('user-input');
+        const text = input.value.trim();
+        if(!text || !key) return;
+
+        history.push({role:'user', content:text});
+        input.value = ''; updateUI(); render();
+
+        const model = mode === 'Fast' ? 'google/gemini-2.0-flash-lite-001' : 'deepseek/deepseek-r1';
+        try {
+            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ "model": model, "messages": history })
             });
-            win.scrollTo(0, win.scrollHeight);
-        }
-        function clearHistory() { chatHistory = []; localStorage.removeItem('orca_history'); renderHistory(); closeAllMenus(); }
+            const data = await res.json();
+            const aiText = data.choices[0].message.content.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}]/gu, '');
+            history.push({role:'assistant', content:aiText});
+            localStorage.setItem('orca_hist', JSON.stringify(history));
+            render();
+        } catch (e) { alert('Ошибка API'); }
+    }
 
-        function appendUserMsg(text, save = true) {
-            const win = document.getElementById('chat-window');
-            win.innerHTML += `<div class="message user-msg">${text}</div>`;
-            if(save) chatHistory.push({role: 'user', content: text});
-            win.scrollTo(0, win.scrollHeight);
-        }
+    function startV() {
+        const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!Rec) return;
+        const rec = new Rec();
+        rec.onresult = (e) => { document.getElementById('user-input').value = e.results[0][0].transcript; updateUI(); };
+        rec.start();
+    }
+</script>
 
-        function appendOrcaMsg(text, save = true) {
-            const win = document.getElementById('chat-window');
-            const id = 'orca-' + Date.now();
-            win.innerHTML += `<div class="orca-msg" id="${id}"><div class="orca-wrapper"><div class="rainbow-orbit"></div></div><div class="orca-content"><div class="text-area"></div></div></div>`;
-            const area = document.getElementById(id).querySelector('.text-area');
-            if(save) {
-                chatHistory.push({role: 'assistant', content: text});
-                localStorage.setItem('orca_history', JSON.stringify(chatHistory));
-                typeEffect(text, area);
-            } else { area.innerHTML = marked.parse(text); }
-        }
-
-        // Отправка
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const text = input.value.trim();
-            if(!text) return;
-            if(!apiKey) { alert('Введите API Key в настройках'); toggleMenu('main-menu', event); return; }
-
-            appendUserMsg(text);
-            input.value = '';
-
-            const win = document.getElementById('chat-window');
-            const tempId = 'loading-' + Date.now();
-            win.innerHTML += `<div class="orca-msg" id="${tempId}"><div class="orca-wrapper"><div class="rainbow-orbit"></div></div><div class="orca-content"><div class="dot-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
-            win.scrollTo(0, win.scrollHeight);
-
-            const model = currentMode === 'Fast' ? 'google/gemini-2.0-flash-lite-001' : 'deepseek/deepseek-r1';
-            try {
-                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ "model": model, "messages": [systemPrompt, ...chatHistory] })
-                });
-                const data = await res.json();
-                let aiRes = data.choices[0].message.content;
-                aiRes = aiRes.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}]/gu, '');
-                aiRes = aiRes.replace(/([.!?])\s+(?=[А-ЯA-Z])/g, "$1\n\n");
-                document.getElementById(tempId).remove();
-                appendOrcaMsg(aiRes);
-            } catch (e) { document.getElementById(tempId).remove(); alert('Ошибка API.'); }
-        }
-
-        // Печать Markdown
-        function typeEffect(text, element) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = marked.parse(text);
-            const nodes = Array.from(tempDiv.childNodes);
-            let nodeIdx = 0;
-            function process() {
-                if (nodeIdx < nodes.length) {
-                    const node = nodes[nodeIdx];
-                    if (node.nodeType === Node.TEXT_NODE) typeText(node.textContent, element, process);
-                    else {
-                        const clone = node.cloneNode(true);
-                        clone.style.opacity = '0'; element.appendChild(clone);
-                        setTimeout(() => { clone.style.opacity = '1'; clone.style.transition = '0.5s'; nodeIdx++; process(); }, 50);
-                    }
-                    document.getElementById('chat-window').scrollTo(0, document.getElementById('chat-window').scrollHeight);
-                }
-            }
-            function typeText(txt, target, done) {
-                let charIdx = 0;
-                function loop() {
-                    if (charIdx < txt.length) {
-                        const s = document.createElement('span'); s.className = 'letter';
-                        s.innerText = txt[charIdx]; target.appendChild(s);
-                        charIdx++; setTimeout(loop, 35);
-                    } else { nodeIdx++; done(); }
-                }
-                loop();
-            }
-            process();
-        }
-
-        // Голос
-        function startVoice() {
-            const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Recognition) { alert('Голосовой ввод не поддерживается'); return; }
-            const recognition = new Recognition();
-            recognition.onresult = (e) => {
-                document.getElementById('user-input').value = e.results[0][0].transcript;
-                sendMessage(); // Сразу отправляем
-            };
-            recognition.start();
-        }
-
-        window.onclick = e => { if (!e.target.matches('.menu-btn') && !e.target.closest('.lightning-wrap')) closeAllMenus(); }
-    </script>
 </body>
-  </html>
-  
+</html>
