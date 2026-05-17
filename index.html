@@ -94,6 +94,28 @@
             color: #fff;
         }
 
+        /* БЕЗОПАСНЫЙ ДЕПОЗИТАРИЙ ДЛЯ КЛЮЧА ВНУТРИ СЕНДБАРA */
+        .api-key-box {
+            margin-top: auto;
+            padding: 10px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .api-key-box input {
+            width: 100%;
+            background: #1c1c24;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .api-key-box input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
         /* ОБЛАСТЬ ОВЕРЛЕЯ ДЛЯ МЕНЮ */
         .sidebar-overlay {
             position: fixed;
@@ -410,6 +432,10 @@
         <div class="chat-list" id="chatHistoryList">
             <div class="chat-item active">Текущий диалог Orca</div>
         </div>
+
+        <div class="api-key-box">
+            <input type="password" id="apiKeyStorageInput" placeholder="Введи API-ключ тут (Скрыто)">
+        </div>
     </div>
 
     <div class="main-content">
@@ -466,13 +492,6 @@
     </div>
 
     <script>
-        // ====================================================
-        // ВСТАВЬ СВОЙ API КЛЮЧ СЮДА (УДАЛИ ПРИ ПУБЛИКАЦИИ НА GITHUB)
-        // ====================================================
-        const ORCA_API_KEY = "СЮДА_ВСТАВЛЯЙ_СВОЙ_API_КЛЮЧ";
-        // Пример URL локального сервера Termux (если используешь мост Python)
-        const LOCAL_API_URL = "http://localhost:5000/api/chat"; 
-
         const btnMenuToggle = document.getElementById('btnMenuToggle');
         const sidebarMenu = document.getElementById('sidebarMenu');
         const menuOverlay = document.getElementById('menuOverlay');
@@ -483,11 +502,22 @@
         const dialogScroller = document.getElementById('dialogScroller');
         const userInputField = document.getElementById('user-input-field');
         const dynamicActionBtn = document.getElementById('dynamicActionBtn');
+        const apiKeyStorageInput = document.getElementById('apiKeyStorageInput');
         
         const iconVoice = document.getElementById('icon-voice');
         const iconSend = document.getElementById('icon-send');
 
-        // ИСПРАВЛЕНО: Рабочий клик по бургер-кнопке (три полоски)
+        // Подгружаем ключ из памяти браузера при старте страницы
+        if(localStorage.getItem('orca_user_key')) {
+            apiKeyStorageInput.value = localStorage.getItem('orca_user_key');
+        }
+
+        // Сохраняем ключ при изменении внутри инпута в меню
+        apiKeyStorageInput.addEventListener('input', () => {
+            localStorage.setItem('orca_user_key', apiKeyStorageInput.value.trim());
+        });
+
+        // Полностью переписанная логика сайдбара (Три полоски)
         btnMenuToggle.addEventListener('click', () => {
             sidebarMenu.classList.add('active');
             menuOverlay.classList.add('active');
@@ -505,14 +535,16 @@
             menuOverlay.classList.remove('active');
         });
 
-        // ИСПРАВЛЕНО: Мгновенное появление кнопки отправки при вводе
+        // Четкое переключение режимов кнопки "Микрофон / Стрелка"
         userInputField.addEventListener('input', () => {
             if (userInputField.value.trim().length > 0) {
-                dynamicActionBtn.className = "action-btn send-mode";
+                dynamicActionBtn.classList.remove('voice-mode');
+                dynamicActionBtn.classList.add('send-mode');
                 iconVoice.style.display = 'none';
                 iconSend.style.display = 'block';
             } else {
-                dynamicActionBtn.className = "action-btn voice-mode";
+                dynamicActionBtn.classList.remove('send-mode');
+                dynamicActionBtn.classList.add('voice-mode');
                 iconSend.style.display = 'none';
                 iconVoice.style.display = 'block';
             }
@@ -522,13 +554,12 @@
             dialogScroller.scrollTop = dialogScroller.scrollHeight;
         }
 
-        // Логика обработки отправки сообщений с интеграцией API
+        // Логика обработки отправки сообщений
         async function processUserMessage() {
             const text = userInputField.value.trim();
             
-            // Если поле пустое — запускается логика микрофона (голосовой ввод)
             if (!text) {
-                console.log("Голосовой ввод активирован...");
+                console.log("Голосовой ввод...");
                 return;
             }
 
@@ -536,41 +567,22 @@
                 welcomeScreen.classList.add('hidden');
             }
 
-            // Отрисовка сообщения юзера
+            // Отрисовка сообщения пользователя
             const userRow = document.createElement('div');
             userRow.className = 'message-row user';
             userRow.innerHTML = `<div class="bubble">${text}</div>`;
             dialogScroller.appendChild(userRow);
 
-            // Возврат инпута в исходное состояние микрофона
+            // Сброс поля
             userInputField.value = '';
-            dynamicActionBtn.className = "action-btn voice-mode";
+            dynamicActionBtn.classList.remove('send-mode');
+            dynamicActionBtn.classList.add('voice-mode');
             iconSend.style.display = 'none';
             iconVoice.style.display = 'block';
             
             forceScrollToBottom();
 
-            // Старт анимации центрального логотипа
+            // Анимация главного логотипа
             logoWrapper.classList.add('processing');
 
-            // Отрисовка контейнера под ответ ИИ с идеальной анимацией радара
-            const orcaRow = document.createElement('div');
-            orcaRow.className = 'message-row orca';
-            const orcaBubble = document.createElement('div');
-            orcaBubble.className = 'bubble';
-            orcaBubble.innerHTML = `
-                <div class="think-container" id="current-loader">
-                    <div class="think-loader">
-                        <div class="radar-arc"></div>
-                        <div class="inner-diamond"></div>
-                    </div>
-                </div>
-            `;
-            orcaRow.appendChild(orcaBubble);
-            dialogScroller.appendChild(orcaRow);
-            forceScrollToBottom();
-
-            // ОТПРАВКА СЕТЕВОГО ЗАПРОСА С ИСПОЛЬЗОВАНИЕМ КЛЮЧА
-            try {
-                // Если ты используешь локальный сервер в Termux (Flask/FastAPI):
- 
+            // Контейнер ответа с анимаци
