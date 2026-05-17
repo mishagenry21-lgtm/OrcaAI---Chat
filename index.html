@@ -1,1 +1,576 @@
-Привет мир
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrcaAI Elite</title>
+    <link rel="manifest" href="manifest.json?v=3">
+    <meta name="theme-color" content="#00c3ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0b0b0d;
+            color: #ffffff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* БОКОВОЕ МЕНЮ (ИСТОРИЯ ЧАТОВ) */
+        .sidebar {
+            width: 280px;
+            background: #111115;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 15px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: -280px;
+            z-index: 999;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .new-chat-btn {
+            background: linear-gradient(135deg, rgba(160, 32, 240, 0.2), rgba(0, 195, 255, 0.2));
+            border: 1px solid rgba(0, 195, 255, 0.3);
+            color: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: linear-gradient(135deg, rgba(160, 32, 240, 0.4), rgba(0, 195, 255, 0.4));
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.2);
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-size: 14px;
+            color: #b0b0b5;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .chat-item:hover, .chat-item.active {
+            background: rgba(0, 195, 255, 0.08);
+            border-color: rgba(0, 195, 255, 0.2);
+            color: #fff;
+        }
+
+        /* ОБЛАСТЬ ОВЕРЛЕЯ ДЛЯ МЕНЮ */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 998;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* ГЛАВНЫЙ ЭКРАН ПРИЛОЖЕНИЯ */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Верхний бар управления */
+        .header-bar {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            background: rgba(11, 11, 13, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            z-index: 10;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* СТАРТОВЫЙ ПРИВЕТСТВЕННЫЙ ЭКРАН */
+        .welcome-container {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            z-index: 2;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .welcome-container.hidden {
+            opacity: 0;
+            transform: translate(-50%, -60%);
+            pointer-events: none;
+        }
+
+        /* Интерактивный ромб со смайликом косатки */
+        .welcome-rhombus-wrapper {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            margin-bottom: 25px;
+            animation: orcaFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes orcaFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(1deg); }
+        }
+
+        .welcome-rhombus {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(0, 195, 255, 0.35));
+        }
+
+        .orca-emoji {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 34px;
+            user-select: none;
+            z-index: 3;
+        }
+
+        /* ОРБИТАЛЬНАЯ АНИМАЦИЯ ВОКРУГ СМАЙЛИКА */
+        .orbit-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #00c3ff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            margin-top: -3px;
+            margin-left: -3px;
+            box-shadow: 0 0 10px #00c3ff, 0 0 20px #00c3ff;
+            display: none;
+            z-index: 4;
+        }
+
+        .welcome-rhombus-wrapper.processing .orbit-dot {
+            display: block;
+            animation: orcaOrbit 1.2s linear infinite;
+        }
+
+        .welcome-rhombus-wrapper.processing {
+            animation: orcaPulse 0.8s ease-in-out infinite alternate !important;
+        }
+
+        @keyframes orcaOrbit {
+            0% { transform: rotate(0deg) translateX(45px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(45px) rotate(-360deg); }
+        }
+
+        @keyframes orcaPulse {
+            0% { filter: drop-shadow(0 0 15px rgba(160, 32, 240, 0.6)); transform: scale(0.97); }
+            100% { filter: drop-shadow(0 0 30px rgba(0, 195, 255, 0.8)); transform: scale(1.04); }
+        }
+
+        .welcome-text-1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .welcome-text-2 {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
+        }
+
+        /* ЧАТ-ЗОНА С ФИКСИРОВАННЫМ СКРОЛЛОМ */
+        .chat-scroller {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .message-row.orca {
+            justify-content: flex-start;
+        }
+
+        .bubble {
+            max-width: 85%;
+            padding: 14px 18px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .user .bubble {
+            background: #1c1c24;
+            color: #ffffff;
+            border-radius: 20px 20px 4px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .orca .bubble {
+            background: transparent;
+            color: #e2e2e9;
+            border-radius: 0;
+            padding: 0;
+            max-width: 90%;
+        }
+
+        /* ЗОНА ВВОДА С СУПЕР-ТОНКОЙ СМЕШАННОЙ РАМКОЙ */
+        .input-area-container {
+            padding: 15px 20px 25px 20px;
+            background: #0b0b0d;
+        }
+
+        .gradient-input-box {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+            background: #121216;
+            border-radius: 24px;
+            padding: 5px 8px 5px 16px;
+            position: relative;
+        }
+
+        .gradient-input-box::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, #a020f0, #3b82f6, #00c3ff);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .gradient-input-box:focus-within::before {
+            opacity: 1;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.2);
+        }
+
+        #user-input-field {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 16px;
+            padding: 12px 0;
+            font-family: inherit;
+        }
+
+        #user-input-field::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* УМНАЯ КНОПКА ОТПРАВКИ И ГОЛОСА */
+        .action-btn {
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #ffffff;
+        }
+
+        .action-btn.send-mode {
+            background: linear-gradient(135deg, #a020f0, #3b82f6, #00c3ff);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn.voice-mode {
+            background: rgba(255, 255, 255, 0.05);
+            color: #b0b0b5;
+        }
+
+        .action-btn.voice-mode:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .action-btn svg {
+            transition: transform 0.2s ease;
+        }
+
+        .action-btn.send-mode:hover svg {
+            transform: scale(1.05);
+        }
+
+        /* --- ИДЕАЛЬНАЯ АНИМАЦИЯ ИЗ ВИДЕО С ТВОИМ ЛОГОТИПОМ --- */
+        .think-container { display: flex; align-items: center; gap: 15px; animation: blurFade 0.5s ease; padding: 5px 0; }
+        .think-loader { width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        .inner-diamond {
+            width: 18px; height: 18px;
+            background: conic-gradient(from 0deg, #3dff71, #2261ff, #ff4545, #3dff71);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            filter: drop-shadow(0 0 5px rgba(34, 97, 255, 0.5));
+            z-index: 2;
+        }
+
+        .radar-arc { 
+            width: 100%; height: 100%; border-radius: 50%; position: absolute;
+            background: conic-gradient(from 0deg, #2261ff 0deg, #00c6ff 90deg, transparent 90deg, transparent 360deg);
+            -webkit-mask: radial-gradient(circle, transparent 73%, black 74%);
+            mask: radial-gradient(circle, transparent 73%, black 74%);
+            animation: radarRotate 0.8s linear infinite;
+        }
+        @keyframes radarRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes blurFade { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: blur(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="menuOverlay"></div>
+
+    <div class="sidebar" id="sidebarMenu">
+        <button class="new-chat-btn" id="btnNewChat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Новый чат
+        </button>
+        <div class="chat-list" id="chatHistoryList">
+            <div class="chat-item active">Текущий диалог Orca</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="header-bar">
+            <button class="menu-toggle" id="btnMenuToggle">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="welcome-container" id="welcomeScreen">
+            <div class="welcome-rhombus-wrapper" id="logoWrapper">
+                <div class="orbit-dot"></div>
+                <svg class="welcome-rhombus" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="rhGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#a020f0" />
+                            <stop offset="50%" stop-color="#3b82f6" />
+                            <stop offset="100%" stop-color="#00c3ff" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M 250,5 C 310,180 320,190 495,250 C 320,310 310,320 250,495 C 190,320 180,310 5,250 C 180,190 190,180 250,5 Z" fill="url(#rhGrad)" />
+                </svg>
+                <div class="orca-emoji">🫍</div>
+            </div>
+            <h2 class="welcome-text-1">Привет, я OrcaAI.</h2>
+            <p class="welcome-text-2">Чем могу помочь вам сегодня?</p>
+        </div>
+
+        <div class="chat-scroller" id="dialogScroller"></div>
+
+        <div class="input-area-container">
+            <div class="gradient-input-box">
+                <input type="text" id="user-input-field" placeholder="Спросить OrcaAI" autocomplete="off">
+                <button class="action-btn voice-mode" id="dynamicActionBtn">
+                    <svg id="icon-voice" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                    <svg id="icon-send" style="display: none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ====================================================
+        // ВСТАВЬ СВОЙ API КЛЮЧ СЮДА (УДАЛИ ПРИ ПУБЛИКАЦИИ НА GITHUB)
+        // ====================================================
+        const ORCA_API_KEY = "СЮДА_ВСТАВЛЯЙ_СВОЙ_API_КЛЮЧ";
+        // Пример URL локального сервера Termux (если используешь мост Python)
+        const LOCAL_API_URL = "http://localhost:5000/api/chat"; 
+
+        const btnMenuToggle = document.getElementById('btnMenuToggle');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const menuOverlay = document.getElementById('menuOverlay');
+        const btnNewChat = document.getElementById('btnNewChat');
+        
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const logoWrapper = document.getElementById('logoWrapper');
+        const dialogScroller = document.getElementById('dialogScroller');
+        const userInputField = document.getElementById('user-input-field');
+        const dynamicActionBtn = document.getElementById('dynamicActionBtn');
+        
+        const iconVoice = document.getElementById('icon-voice');
+        const iconSend = document.getElementById('icon-send');
+
+        // ИСПРАВЛЕНО: Рабочий клик по бургер-кнопке (три полоски)
+        btnMenuToggle.addEventListener('click', () => {
+            sidebarMenu.classList.add('active');
+            menuOverlay.classList.add('active');
+        });
+
+        menuOverlay.addEventListener('click', () => {
+            sidebarMenu.classList.remove('active');
+            menuOverlay.classList.remove('active');
+        });
+
+        btnNewChat.addEventListener('click', () => {
+            dialogScroller.innerHTML = '';
+            welcomeScreen.classList.remove('hidden');
+            sidebarMenu.classList.remove('active');
+            menuOverlay.classList.remove('active');
+        });
+
+        // ИСПРАВЛЕНО: Мгновенное появление кнопки отправки при вводе
+        userInputField.addEventListener('input', () => {
+            if (userInputField.value.trim().length > 0) {
+                dynamicActionBtn.className = "action-btn send-mode";
+                iconVoice.style.display = 'none';
+                iconSend.style.display = 'block';
+            } else {
+                dynamicActionBtn.className = "action-btn voice-mode";
+                iconSend.style.display = 'none';
+                iconVoice.style.display = 'block';
+            }
+        });
+
+        function forceScrollToBottom() {
+            dialogScroller.scrollTop = dialogScroller.scrollHeight;
+        }
+
+        // Логика обработки отправки сообщений с интеграцией API
+        async function processUserMessage() {
+            const text = userInputField.value.trim();
+            
+            // Если поле пустое — запускается логика микрофона (голосовой ввод)
+            if (!text) {
+                console.log("Голосовой ввод активирован...");
+                return;
+            }
+
+            if (!welcomeScreen.classList.contains('hidden')) {
+                welcomeScreen.classList.add('hidden');
+            }
+
+            // Отрисовка сообщения юзера
+            const userRow = document.createElement('div');
+            userRow.className = 'message-row user';
+            userRow.innerHTML = `<div class="bubble">${text}</div>`;
+            dialogScroller.appendChild(userRow);
+
+            // Возврат инпута в исходное состояние микрофона
+            userInputField.value = '';
+            dynamicActionBtn.className = "action-btn voice-mode";
+            iconSend.style.display = 'none';
+            iconVoice.style.display = 'block';
+            
+            forceScrollToBottom();
+
+            // Старт анимации центрального логотипа
+            logoWrapper.classList.add('processing');
+
+            // Отрисовка контейнера под ответ ИИ с идеальной анимацией радара
+            const orcaRow = document.createElement('div');
+            orcaRow.className = 'message-row orca';
+            const orcaBubble = document.createElement('div');
+            orcaBubble.className = 'bubble';
+            orcaBubble.innerHTML = `
+                <div class="think-container" id="current-loader">
+                    <div class="think-loader">
+                        <div class="radar-arc"></div>
+                        <div class="inner-diamond"></div>
+                    </div>
+                </div>
+            `;
+            orcaRow.appendChild(orcaBubble);
+            dialogScroller.appendChild(orcaRow);
+            forceScrollToBottom();
+
+            // ОТПРАВКА СЕТЕВОГО ЗАПРОСА С ИСПОЛЬЗОВАНИЕМ КЛЮЧА
+            try {
+                // Если ты используешь локальный сервер в Termux (Flask/FastAPI):
+ 
