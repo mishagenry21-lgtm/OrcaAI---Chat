@@ -1,1 +1,432 @@
-Привет мир
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>OrcaAI</title>
+  <style>
+    :root {
+      --bg: #0b0b0b;
+      --surface: #121212;
+      --text: #ffffff;
+      --text-secondary: #a0a0a0;
+      --user-bubble: #1e1e1e;
+      --input-bg: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #ffffff;
+      --send-inactive: #2a2a2a;
+      --send-active: #ffffff;
+      --menu-bg: #1a1a1a;
+      --shadow: 0 0 20px rgba(0,0,0,0.5);
+      --orb-1: #3b82f6;
+      --orb-2: #8b5cf6;
+      --orb-3: #06b6d4;
+    }
+
+    body.theme-light {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --user-bubble: #e2e8f0;
+      --input-bg: #ffffff;
+      --border: #cbd5e1;
+      --accent: #3b82f6;
+      --send-inactive: #cbd5e1;
+      --send-active: #1e293b;
+      --menu-bg: #ffffff;
+      --shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    body.theme-blue {
+      --bg: #0f1f3d;
+      --surface: #162544;
+      --text: #e0f0ff;
+      --text-secondary: #8ab4f8;
+      --user-bubble: #1e3a5f;
+      --input-bg: #1a2e50;
+      --border: #2a4a7f;
+      --accent: #60a5fa;
+      --send-inactive: #2a4a7f;
+      --send-active: #e0f0ff;
+      --menu-bg: #162544;
+      --shadow: 0 0 25px rgba(59,130,246,0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; height: 100dvh;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+      color: var(--text);
+    }
+
+    .app {
+      width: 100%; max-width: 500px; height: 100vh; height: 100dvh;
+      background: var(--surface);
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow);
+      position: relative;
+      transition: background 0.3s;
+    }
+
+    /* Header */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .logo { font-size: 20px; font-weight: 700; }
+    .menu-btn {
+      background: none; border: none; color: var(--text);
+      font-size: 24px; cursor: pointer; padding: 4px 8px;
+      border-radius: 8px; line-height: 1;
+    }
+
+    /* Меню */
+    .popup {
+      position: absolute; top: 55px; right: 15px;
+      background: var(--menu-bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 12px; z-index: 100;
+      display: none; flex-direction: column; gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      min-width: 200px;
+      transition: background 0.3s;
+    }
+    .popup.show { display: flex; }
+    .popup input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 10px; border-radius: 10px; font-size: 14px;
+    }
+    .theme-row { display: flex; gap: 8px; }
+    .theme-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      cursor: pointer; border: 2px solid transparent;
+    }
+    .theme-dot.active { border-color: var(--accent); }
+    .theme-dot.black { background: #0b0b0b; }
+    .theme-dot.white { background: #f1f5f9; }
+    .theme-dot.blue { background: #1e4d7b; }
+    .popup .danger-btn {
+      background: none; border: none; color: #ef4444;
+      text-align: left; padding: 8px; cursor: pointer; font-size: 14px;
+    }
+
+    /* Chat area */
+    .chat {
+      flex: 1; overflow-y: auto; padding: 16px 16px 10px;
+      display: flex; flex-direction: column; gap: 16px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .welcome {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; gap: 10px; margin-top: 30%;
+      animation: fadeIn 0.5s ease;
+    }
+    .welcome-orb {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: conic-gradient(#3b82f6, #8b5cf6, #06b6d4, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; animation: orbSpin 4s linear infinite;
+      filter: blur(1px);
+    }
+    @keyframes orbSpin { to { transform: rotate(360deg); } }
+    .welcome h2 { font-size: 22px; font-weight: 600; margin-top: 4px; }
+    .welcome p { color: var(--text-secondary); font-size: 15px; }
+
+    /* Messages */
+    .msg {
+      max-width: 80%; padding: 12px 16px; border-radius: 20px;
+      line-height: 1.45; font-size: 15px;
+      animation: fadeIn 0.25s ease; word-break: break-word;
+    }
+    .msg.user {
+      align-self: flex-end; background: var(--user-bubble);
+      border-bottom-right-radius: 6px; color: var(--text);
+    }
+    .msg.bot {
+      align-self: flex-start; background: transparent;
+      padding-left: 4px; border-bottom-left-radius: 6px;
+      color: var(--text);
+    }
+
+    /* Анимация букв */
+    .msg.bot span.letter {
+      opacity: 0; filter: blur(10px); transform: translateY(5px);
+      display: inline-block; animation: letterPop 0.35s forwards;
+    }
+    @keyframes letterPop {
+      to { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Думание (орбита вокруг аватарки) */
+    .thinking-block {
+      align-self: flex-start; display: flex; align-items: center; gap: 12px;
+    }
+    .thinking-orb {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: conic-gradient(var(--orb-1), var(--orb-2), var(--orb-3), var(--orb-1));
+      animation: orbSpin 3s linear infinite;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    /* Input panel */
+    .input-panel {
+      padding: 12px 16px 20px; flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .input-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .input-wrapper {
+      flex: 1; position: relative; border-radius: 28px;
+      padding: 2px; background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4, #3b82f6);
+      background-size: 300% 100%;
+      animation: borderGlow 3s linear infinite;
+    }
+    @keyframes borderGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .input-wrapper input {
+      width: 100%; padding: 14px 20px; border-radius: 26px;
+      border: none; background: var(--input-bg); color: var(--text);
+      font-size: 16px; outline: none;
+    }
+    .input-wrapper input::placeholder { color: var(--text-secondary); }
+
+    /* Кнопки */
+    .btn {
+      width: 46px; height: 46px; border-radius: 50%; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; font-size: 18px;
+      transition: all 0.2s; background: var(--send-inactive); color: var(--text);
+    }
+    .btn.send-active {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white; box-shadow: 0 0 12px rgba(139,92,246,0.4);
+    }
+    .btn.voice-btn {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white; width: auto; padding: 0 18px; border-radius: 24px;
+      font-size: 14px; font-weight: 600; gap: 6px;
+    }
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 50; display: none;
+    }
+    .overlay.show { display: block; }
+  </style>
+</head>
+<body class="theme-dark">
+  <div class="app" id="app">
+    <div class="header">
+      <div class="logo">🐋 OrcaAI</div>
+      <button class="menu-btn" id="menuBtn">⋮</button>
+    </div>
+
+    <div class="popup" id="popup">
+      <input type="password" id="keyInput" placeholder="OpenRouter ключ" onchange="saveKey(this.value)">
+      <div class="theme-row" id="themeRow">
+        <div class="theme-dot black active" data-theme="dark"></div>
+        <div class="theme-dot white" data-theme="light"></div>
+        <div class="theme-dot blue" data-theme="blue"></div>
+      </div>
+      <button class="danger-btn" id="clearBtn">🗑 Очистить чат</button>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="input-panel">
+      <div class="input-row">
+        <div class="input-wrapper">
+          <input type="text" id="userInput" placeholder="Спросить OrcaAI" autocomplete="off" oninput="updateSendBtn()" onkeydown="if(event.key==='Enter')sendMsg()">
+        </div>
+        <button class="btn voice-btn" id="sendBtn" onclick="handleSendOrVoice()">
+          <span>🎤</span> Голосовой
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+  <script>
+    // ========== СОСТОЯНИЕ ==========
+    const SYSTEM_PROMPT = `Ты — OrcaAI, созданная Мишей (OrcaAbyss). Твой стиль — дерзкий, дружелюбный, с юмором. Отвечаешь на русском, коротко. Никогда не говори, что ты "всего лишь ИИ". Ты — OrcaAI. Если спрашивают кто ты: "Я OrcaAI от OrcaAbyss. Никак иначе." На вопрос "как дела?": "Дела у прокурора, а у меня делишки. Всё по маслу, а у тебя?" Шутка про медведя: "Иду по лесу, на меня медведь! Ружье вскинул — осечка! Думаю, конец... Медведь съел? Нет, я вчера не мылся, он понюхал и ушел!" В конце разговора можешь добавлять: "Ну, вот так как то."`;
+    
+    let apiKey = localStorage.getItem('orca_key') || '';
+    let theme = localStorage.getItem('orca_theme') || 'dark';
+    let history = JSON.parse(localStorage.getItem('orca_hist')) || [];
+    if (!history.length || history[0].role !== 'system') {
+      history = [{ role: 'system', content: SYSTEM_PROMPT }];
+    }
+
+    // ========== DOM ==========
+    const chat = document.getElementById('chat');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const popup = document.getElementById('popup');
+    const overlay = document.getElementById('overlay');
+    const keyInput = document.getElementById('keyInput');
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    document.body.className = 'theme-' + theme;
+    keyInput.value = apiKey;
+    document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+    document.querySelector(`.theme-dot[data-theme="${theme}"]`)?.classList.add('active');
+    renderWelcomeOrHistory();
+    updateSendBtn();
+
+    // ========== МЕНЮ ==========
+    document.getElementById('menuBtn').onclick = () => {
+      popup.classList.toggle('show');
+      overlay.classList.toggle('show');
+    };
+    overlay.onclick = closeMenu;
+    function closeMenu() { popup.classList.remove('show'); overlay.classList.remove('show'); }
+
+    // ========== ТЕМЫ ==========
+    document.getElementById('themeRow').onclick = (e) => {
+      if (e.target.classList.contains('theme-dot')) {
+        theme = e.target.dataset.theme;
+        document.body.className = 'theme-' + theme;
+        localStorage.setItem('orca_theme', theme);
+        document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+        e.target.classList.add('active');
+        closeMenu();
+      }
+    };
+
+    // ========== КЛЮЧ ==========
+    function saveKey(val) { apiKey = val.trim(); localStorage.setItem('orca_key', apiKey); }
+
+    // ========== ОТРИСОВКА ==========
+    function renderWelcomeOrHistory() {
+      chat.innerHTML = '';
+      if (history.length <= 1 && history[0].role === 'system') {
+        chat.innerHTML = `
+          <div class="welcome">
+            <div class="welcome-orb">🐋</div>
+            <h2>Привет, я OrcaAI.</h2>
+            <p>Нейросеть от Мишы!</p>
+          </div>`;
+      } else {
+        history.forEach(m => {
+          if (m.role === 'user') chat.innerHTML += `<div class="msg user">${escapeHtml(m.content)}</div>`;
+          if (m.role === 'assistant') chat.innerHTML += `<div class="msg bot">${escapeHtml(m.content)}</div>`;
+        });
+      }
+      scrollToBottom();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        chat.scrollTop = chat.scrollHeight;
+      });
+    }
+
+    // ========== КНОПКА ОТПРАВКИ ==========
+    function updateSendBtn() {
+      const hasText = userInput.value.trim().length > 0;
+      sendBtn.innerHTML = hasText ? '➤' : '<span>🎤</span> Голосовой';
+      sendBtn.className = hasText ? 'btn send-active' : 'btn voice-btn';
+    }
+
+    function handleSendOrVoice() {
+      if (userInput.value.trim()) sendMsg();
+      else startVoice();
+    }
+
+    // ========== ОТПРАВКА ==========
+    async function sendMsg() {
+      const text = userInput.value.trim();
+      if (!text) return;
+      if (!apiKey) { alert('Введи OpenRouter ключ в меню (⋮)'); return; }
+
+      userInput.value = '';
+      updateSendBtn();
+      history.push({ role: 'user', content: text });
+      renderWelcomeOrHistory();
+
+      // Блок думания
+      const thinkDiv = document.createElement('div');
+      thinkDiv.className = 'thinking-block';
+      thinkDiv.innerHTML = '<div class="thinking-orb">🐋</div><div class="msg bot" style="color:var(--text-secondary);">Думаю...</div>';
+      chat.appendChild(thinkDiv);
+      scrollToBottom();
+
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'deepseek/deepseek-chat:free',
+            messages: history,
+            temperature: 0.7,
+            max_tokens: 2048
+          })
+        });
+        const data = await res.json();
+        const reply = data.choices?.[0]?.message?.content || '🤷 Не смог ответить.';
+
+        history.push({ role: 'assistant', content: reply });
+        localStorage.setItem('orca_hist', JSON.stringify(history));
+
+        // Удаляем блок думания
+        thinkDiv.remove();
+        renderWelcomeOrHistory();
+
+      } catch (e) {
+        thinkDiv.innerHTML = '<div class="msg bot">❌ Ошибка сети. Проверь ключ или интернет.</div>';
+      }
+    }
+
+    // ========== ГОЛОС ==========
+    function startVoice() {
+      const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!Rec) { alert('Голосовой ввод не поддерживается этим браузером'); return; }
+      const rec = new Rec();
+      rec.lang = 'ru-RU';
+      rec.onresult = (e) => {
+        userInput.value = e.results[0][0].transcript;
+        updateSendBtn();
+      };
+      rec.start();
+    }
+
+    // ========== ОЧИСТКА ==========
+    document.getElementById('clearBtn').onclick = () => {
+      history = [{ role: 'system', content: SYSTEM_PROMPT }];
+      localStorage.setItem('orca_hist', JSON.stringify(history));
+      renderWelcomeOrHistory();
+      closeMenu();
+    };
+
+    // Исправление бага скролла — MutationObserver для подскролла при печати
+    const observer = new MutationObserver(() => scrollToBottom());
+    observer.observe(chat, { childList: true, subtree: true, characterData: true });
+  </script>
+</body>
+                                                          </html>
